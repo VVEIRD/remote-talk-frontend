@@ -1,0 +1,9 @@
+*.jar
+*.prefs
+.settings/
+bin/
+target/
+.project
+*.zip
+pom.xml
+.classpath
