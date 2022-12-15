@@ -1,7 +1,8 @@
-package de.owlhq.remotebox;
+package de.owlhq.remotebox.animation;
 
 import java.awt.Color;
 
+import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 
 import de.owlhq.remotebox.gui.panel.LedPanel;
@@ -10,6 +11,7 @@ public class BlinkAnimator implements Runnable {
 	
 	private BlinkAnimation ba = null;
 	private LedPanel lp = null;
+	private JLabel fpsCounter = null;
 	private float[][][] frames = null;
 	private int frameNo = 0;
 	private Thread daemon = null;
@@ -17,10 +19,19 @@ public class BlinkAnimator implements Runnable {
 	private int filterFrameNo = 0;
 	private boolean endless = false;
 	private boolean enabled = true;
+	private int fps = 0;
 	private Color[] ledState = {Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK};
 	
 	private int frameAdvance=1;
 	
+	public BlinkAnimator(BlinkAnimation ba, LedPanel lp, JLabel fpsCounter, boolean endless) {
+		super();
+		this.ba = ba;
+		this.lp = lp;
+		this.fpsCounter = fpsCounter;
+		this.frames = this.ba.generate();
+		this.endless = endless;
+	}
 	
 	public BlinkAnimator(BlinkAnimation ba, LedPanel lp, boolean endless) {
 		super();
@@ -31,6 +42,7 @@ public class BlinkAnimator implements Runnable {
 	}
 
 	public void startAnimation() {
+		this.frames = this.ba.generate();
 		SwingUtilities.invokeLater(this);
 		this.daemon = new Thread(new BlinkDaemon());
 		this.daemon.setDaemon(true);
@@ -46,7 +58,14 @@ public class BlinkAnimator implements Runnable {
 				e.printStackTrace();
 			}
 		}
+		this.daemon = null;
 		pullColorsDown();
+	}
+
+	public boolean isRunning() {
+		if (this.daemon == null)
+			return false;
+		return this.daemon.isAlive();
 	}
 
 	private void pullColorsDown() {
@@ -78,7 +97,7 @@ public class BlinkAnimator implements Runnable {
 		int[] filterFrame = getNextFilterFrame();
 		this.frameNo += this.frameAdvance;
 		for (int i=0;i<frame.length;i++) {
-			System.out.print("[" + filterFrame[i] + "]");
+			//System.out.print("[" + filterFrame[i] + "]");
 			Color c = ledState[i];
 			if (filterFrame[i] == 0) {
 				c = new Color((int)(c.getRed()*(1.0f-ba.getDecay())), (int)(c.getGreen()*(1.0f-ba.getDecay())), (int)(c.getBlue()*(1.0f-ba.getDecay())));
@@ -89,7 +108,16 @@ public class BlinkAnimator implements Runnable {
 			ledState[i] = c;
 			this.lp.setColor(i, ledState[i]);
 		}
-		System.out.println();
+		if (fpsCounter != null) {
+			fpsCounter.setText("FPS: " + this.fps);
+			if (this.fps < this.ba.getFPS()-5)
+				fpsCounter.setForeground(Color.RED);
+			else if (this.fps < this.ba.getFPS())
+				fpsCounter.setForeground(Color.ORANGE);
+			else
+				fpsCounter.setForeground(Color.green.darker());
+		}
+		//System.out.println();
 		this.frameDrawn++;
 	}
 
@@ -138,8 +166,8 @@ public class BlinkAnimator implements Runnable {
 					}
 					if (locFramesDrawn>30) {
 						long currentTime = System.currentTimeMillis();
-						long fps = 1000/((currentTime - lastFrameDrawn)/locFramesDrawn);
-						System.out.println("FPS: " + fps);
+						int fps = (int) (1000/((currentTime - lastFrameDrawn)/locFramesDrawn));
+						BlinkAnimator.this.fps = fps;
 						lastFrameDrawn = currentTime;
 						locFramesDrawn = 0;
 					}
@@ -154,6 +182,7 @@ public class BlinkAnimator implements Runnable {
 		this.filterFrameNo = 0;
 		this.frameDrawn = 0;
 		this.frameNo = 0;
+		this.frames = this.ba.generate();
 		this.pullColorsDown();
 	}
 }

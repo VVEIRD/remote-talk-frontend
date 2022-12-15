@@ -27,20 +27,29 @@ import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.RowSpec;
 
-import de.owlhq.remotebox.BlinkAnimation;
-import de.owlhq.remotebox.BlinkAnimation.BlinkTypes;
-import de.owlhq.remotebox.BlinkAnimator;
+import de.owlhq.remotebox.BlinkApp;
+import de.owlhq.remotebox.animation.BlinkAnimation;
+import de.owlhq.remotebox.animation.BlinkAnimator;
+import de.owlhq.remotebox.network.DeviceNetworkEvent;
+import de.owlhq.remotebox.network.DeviceNetworkListener;
+import de.owlhq.remotebox.animation.BlinkAnimation.BlinkTypes;
 
 import com.jgoodies.forms.layout.FormSpecs;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.util.Iterator;
 import java.awt.event.ActionEvent;
 import javax.swing.JColorChooser;
 import javax.swing.SwingConstants;
 import javax.swing.JTable;
+import java.awt.SystemColor;
+import java.awt.Font;
+import javax.swing.JCheckBox;
 
 public class AnimationDialog extends JPanel implements ActionListener, ChangeListener {
 	private JComboBox<BlinkTypes> valueType;
@@ -53,12 +62,12 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 	private JPanel panSourceColors;
 	private JPanel panPreview;
 	private JTabbedPane tabbedPane;
-	private LedPanel valueStartColorLed;
+	private LedPanel valueSourceColorLed;
 	private JLabel lblStartColorLedSelected;
 	private JColorChooser ccStartColor;
 
 	private JPanel panEndColors;
-	private LedPanel valueEndColorLed;
+	private LedPanel valueTargetColorLed;
 	private JLabel lblEndColorLedSelected;
 	private JColorChooser ccEndColor;
 	
@@ -70,6 +79,11 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 	private BlinkAnimator blinkFilterFrameAnimator = null;
 	private JTable valueFilterFrames;
 	DefaultTableModel filterFrameTableModel;
+	private JLabel lblFilterFramesFPS;
+	private JTextField tfSaveName;
+	private JTextField tfSaveLocation;
+	private JComboBox cbRemoteBox;
+	private JButton btnUpload;
 
 	/**
 	 * Create the panel.
@@ -88,12 +102,12 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 		panSourceColors = generateSourceColorPanel(Color.BLACK);
 		panEndColors = generateTargetColorPanel(Color.RED);
 		panFilterFrame = generateFilterFramePanel();
-		panPreview = generatePreviewPanel();
+		panPreview = generateSavePanel();
 
 		tabbedPane.addTab("Start Color", null, panSourceColors, null);
 		tabbedPane.addTab("Target Color", null, panEndColors, null);
 		tabbedPane.addTab("Filter Frames", null, panFilterFrame, null);
-		tabbedPane.addTab("Preview", null, panPreview, null);
+		tabbedPane.addTab("Save", null, panPreview, null);
 		
 	}
 
@@ -107,7 +121,7 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 				ColumnSpec.decode("5px"),
 				ColumnSpec.decode("22px"),
 				ColumnSpec.decode("5px"),
-				ColumnSpec.decode("22px"),
+				ColumnSpec.decode("22px:grow"),
 				ColumnSpec.decode("5px"),
 				ColumnSpec.decode("22px"),
 				ColumnSpec.decode("5px"),
@@ -268,6 +282,24 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 		});
         
         valueFilterFrames.putClientProperty("terminateEditOnFocusLost", true);
+        
+        JButton btnStartAnimation = new JButton("Start/Stop");
+        btnStartAnimation.addActionListener(new ActionListener() {
+        	public void actionPerformed(ActionEvent e) {
+        		if (blinkFilterFrameAnimator == null) {
+					BlinkAnimation ba = AnimationDialog.this.getAnimation();
+					AnimationDialog.this.blinkFilterFrameAnimator = new BlinkAnimator(ba, AnimationDialog.this.filterFrameLedPanel, AnimationDialog.this.lblFilterFramesFPS, true);
+				}
+        		if (AnimationDialog.this.blinkFilterFrameAnimator.isRunning()) {
+        			AnimationDialog.this.blinkFilterFrameAnimator.stopAnimation();
+        		}
+        		else {
+        			AnimationDialog.this.blinkFilterFrameAnimator.reset();
+        			AnimationDialog.this.blinkFilterFrameAnimator.startAnimation();
+        		}
+        	}
+        });
+        panFilterFrame.add(btnStartAnimation, "26, 24, 7, 1");
         valueFilterFrames.setPreferredScrollableViewportSize(valueFilterFrames.getPreferredSize());
         
         JScrollPane scrollPane = new JScrollPane(valueFilterFrames);
@@ -319,6 +351,10 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 		});
 		btnInsertFrame.setMargin(new Insets(1, 1, 1, 1));
 		panFilterFrame.add(btnInsertFrame, "6, 46");
+		
+		lblFilterFramesFPS = new JLabel("FPS: 0");
+		lblFilterFramesFPS.setForeground(SystemColor.menu);
+		panFilterFrame.add(lblFilterFramesFPS, "8, 46, 7, 1");
 		panFilterFrame.add(btnColorSourceBack, "38, 46, 5, 1");
 		
 		// ------------------------------------------------------------------------------------------------------------------
@@ -329,7 +365,7 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 			public void actionPerformed(ActionEvent e) {
 				if (blinkFilterFrameAnimator == null) {
 					BlinkAnimation ba = AnimationDialog.this.getAnimation();
-					AnimationDialog.this.blinkFilterFrameAnimator = new BlinkAnimator(ba, AnimationDialog.this.filterFrameLedPanel, true);
+					AnimationDialog.this.blinkFilterFrameAnimator = new BlinkAnimator(ba, AnimationDialog.this.filterFrameLedPanel, AnimationDialog.this.lblFilterFramesFPS, true);
 				}
 				AnimationDialog.this.blinkFilterFrameAnimator.nextFrame();
 			}
@@ -340,19 +376,19 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 			public void actionPerformed(ActionEvent e) {
 				if (blinkFilterFrameAnimator == null) {
 					BlinkAnimation ba = AnimationDialog.this.getAnimation();
-					AnimationDialog.this.blinkFilterFrameAnimator = new BlinkAnimator(ba, AnimationDialog.this.filterFrameLedPanel, true);
+					AnimationDialog.this.blinkFilterFrameAnimator = new BlinkAnimator(ba, AnimationDialog.this.filterFrameLedPanel, AnimationDialog.this.lblFilterFramesFPS, true);
 				}
 				AnimationDialog.this.blinkFilterFrameAnimator.previousFrame();
 			}
 		});
-		panFilterFrame.add(btnNextFrame, "26, 24, 6, 1");
-		panFilterFrame.add(btnPrevFrame, "18, 24, 5, 1");
+		panFilterFrame.add(btnNextFrame, "20, 24, 3, 1");
+		panFilterFrame.add(btnPrevFrame, "16, 24, 3, 1");
 		panFilterFrame.add(btnColorSourceNext, "44, 46, 5, 1");
 		
 		return panFilterFrame;
 	}
 
-	private JPanel generatePreviewPanel() {
+	private JPanel generateSavePanel() {
 		JPanel panPreview = new JPanel();
 		panPreview.setLayout(new FormLayout(new ColumnSpec[] {
 				ColumnSpec.decode("5px"),
@@ -362,7 +398,7 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 				ColumnSpec.decode("5px"),
 				ColumnSpec.decode("22px"),
 				ColumnSpec.decode("5px"),
-				ColumnSpec.decode("22px"),
+				ColumnSpec.decode("22px:grow"),
 				ColumnSpec.decode("5px"),
 				ColumnSpec.decode("22px"),
 				ColumnSpec.decode("5px"),
@@ -455,7 +491,7 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 		
 		previewLedPanel = new LedPanel();
 		
-		JLabel lblNewLabel = new JLabel("PREVIEW ANIMATION");
+		JLabel lblNewLabel = new JLabel("SAVE BLINK");
 		lblNewLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		panPreview.add(lblNewLabel, "16, 2, 19, 1");
 		panPreview.add(previewLedPanel, "16, 3, 25, 20, fill, default");
@@ -463,8 +499,8 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 		// ------------------------------------------------------------------------------------------------------------------
 		// NEXT and PREVIOUS BUTTONS
 		// ------------------------------------------------------------------------------------------------------------------
-		JButton btnColorSourceNext = new JButton("Next");
-		btnColorSourceNext.addActionListener(new ActionListener() {
+		JButton btnSaveFinish = new JButton("Finish");
+		btnSaveFinish.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				System.out.println("Btn Triggered");
 				if(AnimationDialog.this.blinkPreviewAnimator != null) {
@@ -475,8 +511,8 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 			}
 		});
 
-		JButton btnColorSourceBack = new JButton("Previous");
-		btnColorSourceBack.addActionListener(new ActionListener() {
+		JButton btnSaveBack = new JButton("Previous");
+		btnSaveBack.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if(AnimationDialog.this.blinkPreviewAnimator != null) {
 					AnimationDialog.this.blinkPreviewAnimator.stopAnimation();
@@ -485,34 +521,107 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 				AnimationDialog.this.tabbedPane.setSelectedIndex(AnimationDialog.this.tabbedPane.getSelectedIndex()-1);
 			}
 		});
-		panPreview.add(btnColorSourceBack, "38, 46, 5, 1");
+		
+		JLabel lblNewLabel_2 = new JLabel("Name");
+		lblNewLabel_2.setFont(new Font("Tahoma", Font.PLAIN, 9));
+		panPreview.add(lblNewLabel_2, "4, 26, 5, 1, default, bottom");
+		
+		tfSaveName = new JTextField();
+		panPreview.add(tfSaveName, "4, 28, 15, 1, fill, default");
+		tfSaveName.setColumns(10);
+		
+		JCheckBox chckbxNewCheckBox = new JCheckBox("Send to Remote-Talk-Box");
+		chckbxNewCheckBox.addChangeListener(new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				if (chckbxNewCheckBox.isSelected()) {
+					cbRemoteBox.setEnabled(true);
+					btnUpload.setEnabled(true);
+				}
+				else {
+					cbRemoteBox.setEnabled(false);
+					btnUpload.setEnabled(false);
+				}
+			}
+		});
+		panPreview.add(chckbxNewCheckBox, "30, 28, 17, 1");
+		
+		JLabel lblNewLabel_2_1 = new JLabel("Location");
+		lblNewLabel_2_1.setFont(new Font("Tahoma", Font.PLAIN, 9));
+		panPreview.add(lblNewLabel_2_1, "4, 30, 5, 1, default, bottom");
+		
+		JLabel lblNewLabel_2_2 = new JLabel("Remote Box");
+		lblNewLabel_2_2.setFont(new Font("Tahoma", Font.PLAIN, 9));
+		panPreview.add(lblNewLabel_2_2, "30, 30, 9, 1, default, bottom");
+		String[] blinkDevices = BlinkApp.getDeviceNames().toArray(new String[0]);
+		cbRemoteBox = new JComboBox(blinkDevices);
+		cbRemoteBox.setEnabled(false);
+		panPreview.add(cbRemoteBox, "30, 32, 17, 1, fill, default");
+		BlinkApp.addDeviceNetworkListener(new DeviceNetworkListener() {
+			
+			@Override
+			public void deviceNetworkChange(DeviceNetworkEvent e) {
+				if (e.eventType == DeviceNetworkEvent.DEVICE_CONNECTED)
+					cbRemoteBox.addItem(e.source.getDeviceName());
+				else {
+					cbRemoteBox.removeAllItems();
+					for(String name: BlinkApp.getDeviceNames()) {
+						cbRemoteBox.addItem(name);
+					}
+				}
+			}
+		});
+		tfSaveLocation = new JTextField();
+		tfSaveLocation.setText("data\\blinks");
+		tfSaveLocation.setColumns(10);
+		panPreview.add(tfSaveLocation, "4, 32, 9, 1, fill, default");
+		
+		JButton btnNewLocation = new JButton("Location");
+		btnNewLocation.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setDialogTitle("Specify a location to save the animation to");    
+				fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				int userSelection = fileChooser.showSaveDialog(AnimationDialog.this.getParent());
+				
+				if (userSelection == JFileChooser.APPROVE_OPTION) {
+				    File fileToSave = fileChooser.getSelectedFile();
+				    System.out.println("Save as file: " + fileToSave.getAbsolutePath());
+				    AnimationDialog.this.tfSaveLocation.setText(fileToSave.getAbsolutePath());
+				}
+			}
+		});
+		panPreview.add(btnNewLocation, "14, 32, 5, 1");
+		
+		JButton btnSave = new JButton("Save");
+		panPreview.add(btnSave, "6, 36, 11, 1");
+		
+		btnUpload = new JButton("Upload");
+		btnUpload.setEnabled(false);
+		panPreview.add(btnUpload, "32, 36, 13, 1");
+		panPreview.add(btnSaveBack, "38, 46, 5, 1");
 		
 		// ------------------------------------------------------------------------------------------------------------------
 		// NEXT and PREVIOUS BUTTONS
 		// ------------------------------------------------------------------------------------------------------------------
-		JButton btnStartAnimation = new JButton("Start");
+		JButton btnStartAnimation = new JButton("Start/Stop");
 		btnStartAnimation.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (blinkPreviewAnimator == null) {
 					BlinkAnimation ba = AnimationDialog.this.getAnimation();
 					AnimationDialog.this.blinkPreviewAnimator = new BlinkAnimator(ba, AnimationDialog.this.previewLedPanel, true);
+				}
+				if(!AnimationDialog.this.blinkPreviewAnimator.isRunning()) {
+					AnimationDialog.this.blinkPreviewAnimator.reset();
 					AnimationDialog.this.blinkPreviewAnimator.startAnimation();
 				}
-			}
-		});
-		panPreview.add(btnStartAnimation, "18, 24, 5, 1");
-		
-		JButton btnStopAnimation = new JButton("Stop");
-		btnStopAnimation.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if(AnimationDialog.this.blinkPreviewAnimator != null) {
+				else {
 					AnimationDialog.this.blinkPreviewAnimator.stopAnimation();
 					AnimationDialog.this.blinkPreviewAnimator = null;
 				}
 			}
 		});
-		panPreview.add(btnStopAnimation, "26, 24, 6, 1");
-		panPreview.add(btnColorSourceNext, "44, 46, 5, 1");
+		panPreview.add(btnStartAnimation, "20, 24, 9, 1");
+		panPreview.add(btnSaveFinish, "44, 46, 5, 1");
 		
 		return panPreview;
 	}
@@ -523,7 +632,7 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 				ColumnSpec.decode("5px"),
 				ColumnSpec.decode("22px"),
 				ColumnSpec.decode("5px"),
-				ColumnSpec.decode("22px"),
+				ColumnSpec.decode("22px:grow"),
 				ColumnSpec.decode("5px"),
 				ColumnSpec.decode("22px"),
 				ColumnSpec.decode("5px"),
@@ -618,16 +727,16 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 				RowSpec.decode("22px"),
 				RowSpec.decode("5px"),}));
 		
-		valueStartColorLed = new LedPanel();
+		valueSourceColorLed = new LedPanel();
 		for (int i=0;i<8;i++) {
-			valueStartColorLed.setColor(i, initColor);
+			valueSourceColorLed.setColor(i, initColor);
 		}
-		valueStartColorLed.addActionListener(this);
+		valueSourceColorLed.addActionListener(this);
 		
 		JLabel lblNewLabel = new JLabel("START COLOR");
 		lblNewLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		panColor.add(lblNewLabel, "16, 2, 19, 1");
-		panColor.add(valueStartColorLed, "16, 3, 25, 20, fill, default");
+		panColor.add(valueSourceColorLed, "16, 3, 25, 20, fill, default");
 		
 
 		JButton btnColorSourceNext = new JButton("Next");
@@ -655,7 +764,15 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 				case 1:
 					Color c = AnimationDialog.this.ccStartColor.getColor();
 					for(int i = 0 ; i < 8; i++) {
-						AnimationDialog.this.valueStartColorLed.setColor(i, c);
+						AnimationDialog.this.valueSourceColorLed.setColor(i, c);
+					}
+					if (AnimationDialog.this.blinkFilterFrameAnimator != null) {
+						AnimationDialog.this.blinkFilterFrameAnimator.getBlinkAnimation().setColor_source(AnimationDialog.this.getValueColorSource());
+						AnimationDialog.this.blinkFilterFrameAnimator.reset();
+					}
+					if (AnimationDialog.this.blinkPreviewAnimator != null) {
+						AnimationDialog.this.blinkPreviewAnimator.getBlinkAnimation().setColor_source(AnimationDialog.this.getValueColorSource());
+						AnimationDialog.this.blinkPreviewAnimator.reset();
 					}
 					break;
 
@@ -684,7 +801,7 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 				ColumnSpec.decode("5px"),
 				ColumnSpec.decode("22px"),
 				ColumnSpec.decode("5px"),
-				ColumnSpec.decode("22px"),
+				ColumnSpec.decode("22px:grow"),
 				ColumnSpec.decode("5px"),
 				ColumnSpec.decode("22px"),
 				ColumnSpec.decode("5px"),
@@ -779,16 +896,16 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 				RowSpec.decode("22px"),
 				RowSpec.decode("5px"),}));
 		
-		valueEndColorLed = new LedPanel();
+		valueTargetColorLed = new LedPanel();
 		for (int i=0;i<8;i++) {
-			valueEndColorLed.setColor(i, initColor);
+			valueTargetColorLed.setColor(i, initColor);
 		}
-		valueEndColorLed.addActionListener(this);
+		valueTargetColorLed.addActionListener(this);
 		
 		JLabel lblNewLabel_1 = new JLabel("TARGET COLOR");
 		lblNewLabel_1.setHorizontalAlignment(SwingConstants.CENTER);
 		panColor.add(lblNewLabel_1, "16, 2, 19, 1");
-		panColor.add(valueEndColorLed, "16, 3, 25, 20, fill, default");
+		panColor.add(valueTargetColorLed, "16, 3, 25, 20, fill, default");
 		
 
 		
@@ -809,7 +926,15 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 				case 2:
 					Color c = AnimationDialog.this.ccEndColor.getColor();
 					for(int i = 0 ; i < 8; i++) {
-						AnimationDialog.this.valueEndColorLed.setColor(i, c);
+						AnimationDialog.this.valueTargetColorLed.setColor(i, c);
+					}
+					if (AnimationDialog.this.blinkFilterFrameAnimator != null) {
+						AnimationDialog.this.blinkFilterFrameAnimator.getBlinkAnimation().setColor_target(AnimationDialog.this.getValueColorTarget());
+						AnimationDialog.this.blinkFilterFrameAnimator.reset();
+					}
+					if (AnimationDialog.this.blinkPreviewAnimator != null) {
+						AnimationDialog.this.blinkPreviewAnimator.getBlinkAnimation().setColor_target(AnimationDialog.this.getValueColorTarget());
+						AnimationDialog.this.blinkPreviewAnimator.reset();
 					}
 					break;
 
@@ -1037,7 +1162,7 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 	private String[] getValueColorTarget() {
 		String[] rgb = new String[8];
 		for (int i = 0; i < rgb.length; i++) {
-			Color c = this.valueEndColorLed.getColor(i);
+			Color c = this.valueTargetColorLed.getColor(i);
 			rgb[i] = "#"+Integer.toHexString(c.getRGB()).substring(2);
 		}
 		return rgb;
@@ -1046,7 +1171,7 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 	private String[] getValueColorSource() {
 		String[] rgb = new String[8];
 		for (int i = 0; i < rgb.length; i++) {
-			Color c = this.valueStartColorLed.getColor(i);
+			Color c = this.valueSourceColorLed.getColor(i);
 			rgb[i] = "#"+Integer.toHexString(c.getRGB()).substring(2);
 		}
 		return rgb;
@@ -1056,12 +1181,12 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 	public void actionPerformed(ActionEvent e) {
 		switch (this.tabbedPane.getSelectedIndex()) {
 		case 1:
-			this.lblStartColorLedSelected.setText("LED " + this.valueStartColorLed.getSelectedButton() + " selected");
-			this.ccStartColor.setColor(this.valueStartColorLed.getSelectedColor());
+			this.lblStartColorLedSelected.setText("LED " + this.valueSourceColorLed.getSelectedButton() + " selected");
+			this.ccStartColor.setColor(this.valueSourceColorLed.getSelectedColor());
 			break;
 		case 2:
-			this.lblEndColorLedSelected.setText("LED " + this.valueEndColorLed.getSelectedButton() + " selected");
-			this.ccEndColor.setColor(this.valueEndColorLed.getSelectedColor());
+			this.lblEndColorLedSelected.setText("LED " + this.valueTargetColorLed.getSelectedButton() + " selected");
+			this.ccEndColor.setColor(this.valueTargetColorLed.getSelectedColor());
 			break;
 
 		default:
@@ -1073,10 +1198,18 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 	public void stateChanged(ChangeEvent e) {
 		switch (this.tabbedPane.getSelectedIndex()) {
 		case 1:
-			this.valueStartColorLed.setColor(this.ccStartColor.getColor());
+			this.valueSourceColorLed.setColor(this.ccStartColor.getColor());
+			if (this.blinkFilterFrameAnimator != null) {
+				this.blinkFilterFrameAnimator.getBlinkAnimation().setColor_source(this.getValueColorSource());
+				this.blinkFilterFrameAnimator.reset();
+			}
 			break;
 		case 2:
-			this.valueEndColorLed.setColor(this.ccEndColor.getColor());
+			this.valueTargetColorLed.setColor(this.ccEndColor.getColor());
+			if (this.blinkPreviewAnimator != null) {
+				this.blinkPreviewAnimator.getBlinkAnimation().setColor_source(this.getValueColorTarget());
+				this.blinkPreviewAnimator.reset();
+			}
 			break;
 
 		default:

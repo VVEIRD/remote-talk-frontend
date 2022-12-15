@@ -1,4 +1,4 @@
-package de.owlhq.remotebox;
+package de.owlhq.remotebox.animation;
 
 import java.awt.Color;
 import java.lang.reflect.Array;
