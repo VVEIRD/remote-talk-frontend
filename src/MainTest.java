@@ -16,6 +16,7 @@ import com.google.gson.JsonSyntaxException;
 import com.vmichalak.protocol.ssdp.Device;
 import com.vmichalak.protocol.ssdp.SSDPClient;
 
+import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
 import de.owlhq.remotebox.animation.BlinkAnimator;
 import de.owlhq.remotebox.gui.panel.AnimationDialog;
@@ -43,13 +44,13 @@ public class MainTest {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		JFrame f = new JFrame();
-		f.setSize(new Dimension(800,800));
-		f.add(new AnimationDialog());
+		//JFrame f = new JFrame();
+		//f.setSize(new Dimension(800,800));
+		//f.add(new AnimationDialog());
 		LedPanel led = new LedPanel();
 		//f.add(led);
-		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		f.setVisible(true);
+		//f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		//f.setVisible(true);
 		//BlinkAnimator bAnim = new BlinkAnimator(ab, led, true);
 		//bAnim.startAnimation();
 		Color your_color = new Color(128,128,128);
@@ -66,6 +67,12 @@ public class MainTest {
 			System.out.println(" Server:      " + device.getServer());
 			System.out.println(" ServiceType: " + device.getServiceType());
 			System.out.println(" URL:         " + device.getDescriptionUrl());
+		}
+	    System.out.println(BlinkApp.getConfig("ASDF"));;
+	    BlinkApp.showStartupDialog();
+	    List<String> files = BlinkApp.getSelectedDeviceAudioController().getAudioFiles();
+	    for (String file : files) {
+			System.out.println("AudioFile: " + file);
 		}
 	}
 }
