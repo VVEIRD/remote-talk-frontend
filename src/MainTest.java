@@ -20,6 +20,7 @@ import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
 import de.owlhq.remotebox.animation.BlinkAnimator;
 import de.owlhq.remotebox.gui.panel.AnimationDialog;
+import de.owlhq.remotebox.gui.panel.LedInterface;
 import de.owlhq.remotebox.gui.panel.LedPanel;
 
 public class MainTest {
@@ -47,7 +48,7 @@ public class MainTest {
 		//JFrame f = new JFrame();
 		//f.setSize(new Dimension(800,800));
 		//f.add(new AnimationDialog());
-		LedPanel led = new LedPanel();
+		LedInterface led = new LedPanel();
 		//f.add(led);
 		//f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		//f.setVisible(true);

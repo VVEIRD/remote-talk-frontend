@@ -5,12 +5,12 @@ import java.awt.Color;
 import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 
-import de.owlhq.remotebox.gui.panel.LedPanel;
+import de.owlhq.remotebox.gui.panel.LedInterface;
 
 public class BlinkAnimator implements Runnable {
 	
 	private BlinkAnimation ba = null;
-	private LedPanel lp = null;
+	private LedInterface lp = null;
 	private JLabel fpsCounter = null;
 	private float[][][] frames = null;
 	private int frameNo = 0;
@@ -24,7 +24,7 @@ public class BlinkAnimator implements Runnable {
 	
 	private int frameAdvance=1;
 	
-	public BlinkAnimator(BlinkAnimation ba, LedPanel lp, JLabel fpsCounter, boolean endless) {
+	public BlinkAnimator(BlinkAnimation ba, LedInterface lp, JLabel fpsCounter, boolean endless) {
 		super();
 		this.ba = ba;
 		this.lp = lp;
@@ -33,7 +33,7 @@ public class BlinkAnimator implements Runnable {
 		this.endless = endless;
 	}
 	
-	public BlinkAnimator(BlinkAnimation ba, LedPanel lp, boolean endless) {
+	public BlinkAnimator(BlinkAnimation ba, LedInterface lp, boolean endless) {
 		super();
 		this.ba = ba;
 		this.lp = lp;

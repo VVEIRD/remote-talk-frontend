@@ -12,6 +12,7 @@ import javax.swing.JTabbedPane;
 import de.owlhq.remotebox.gui.panel.AnimationDialog;
 import java.awt.BorderLayout;
 import de.owlhq.remotebox.gui.panel.AudioControlPanel;
+import de.owlhq.remotebox.gui.panel.LedControlPanel;
 
 public class MainFrame extends JFrame {
 
@@ -127,6 +128,9 @@ public class MainFrame extends JFrame {
 		
 		AudioControlPanel audioControlPanel = new AudioControlPanel();
 		pnCommandCenter.add(audioControlPanel, BorderLayout.NORTH);
+		
+		LedControlPanel ledControlPanel = new LedControlPanel();
+		pnCommandCenter.add(ledControlPanel, BorderLayout.EAST);
 		
 		AnimationDialog animationDialog = new AnimationDialog();
 		tabbedPane.addTab("Create Animation", null, animationDialog, null);

@@ -20,7 +20,7 @@ import java.util.List;
 
 import javax.swing.JButton;
 
-public class LedPanel extends JPanel implements ActionListener, LedInterface {
+public class LedPreviewPanel extends JPanel implements ActionListener, LedInterface {
 
 	/**
 	 * 
@@ -43,16 +43,16 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 	/**
 	 * Create the panel.
 	 */
-	public LedPanel() {
+	public LedPreviewPanel() {
 		setBorder(null);
 		setLayout(null);
-		setSize(254, 254);
-		setMinimumSize(new Dimension(254, 254));
-		setMaximumSize(new Dimension(254, 254));
+		setSize(120, 120);
+		setMinimumSize(new Dimension(100, 100));
+		setMaximumSize(new Dimension(100, 100));
 		
-		led_0 = new JButton("LED 0");
+		led_0 = new JButton("0");
 		led_0.setMargin(new Insets(1,1,1,1));
-		led_0.setBounds(65, 4, 50, 50);
+		led_0.setBounds(28, 2, 24, 24);
 		led_0.setBackground(new Color(0, 0, 0));
 		led_0.setForeground(new Color(120, 120, 120));
 		led_0.setContentAreaFilled(false);
@@ -60,9 +60,9 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 		selectedButton = led_0;		
 		add(led_0);
 		
-		led_1 = new JButton("LED 1");
+		led_1 = new JButton("1");
 		led_1.setMargin(new Insets(1,1,1,1));
-		led_1.setBounds(135, 4, 50, 50);
+		led_1.setBounds(68, 2, 24, 24);
 		led_1.setBackground(new Color(0, 0, 0));
 		led_1.setBackground(new Color(0, 0, 0));
 		led_1.setForeground(new Color(120, 120, 120));
@@ -70,9 +70,9 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 		led_1.setOpaque(true);
 		add(led_1);
 		
-		led_2 = new JButton("LED 2");
+		led_2 = new JButton("2");
 		led_2.setMargin(new Insets(1,1,1,1));
-		led_2.setBounds(200, 65, 50, 50);
+		led_2.setBounds(94, 28, 24, 24);
 		led_2.setBackground(new Color(0, 0, 0));
 		led_2.setBackground(new Color(0, 0, 0));
 		led_2.setForeground(new Color(120, 120, 120));
@@ -80,9 +80,9 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 		led_2.setOpaque(true);
 		add(led_2);
 		
-		led_3 = new JButton("LED 3");
+		led_3 = new JButton("3");
 		led_3.setMargin(new Insets(1,1,1,1));
-		led_3.setBounds(200, 135, 50, 50);
+		led_3.setBounds(94, 68, 24, 24);
 		led_3.setBackground(new Color(0, 0, 0));
 		led_3.setBackground(new Color(0, 0, 0));
 		led_3.setForeground(new Color(120, 120, 120));
@@ -90,9 +90,9 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 		led_3.setOpaque(true);
 		add(led_3);
 		
-		led_7 = new JButton("LED 7");
+		led_7 = new JButton("7");
 		led_7.setMargin(new Insets(1,1,1,1));
-		led_7.setBounds(4, 65, 50, 50);
+		led_7.setBounds(2, 28, 24, 24);
 		led_7.setBackground(new Color(0, 0, 0));
 		led_7.setBackground(new Color(0, 0, 0));
 		led_7.setForeground(new Color(120, 120, 120));
@@ -100,9 +100,9 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 		led_7.setOpaque(true);
 		add(led_7);
 		
-		led_6 = new JButton("LED 6");
+		led_6 = new JButton("6");
 		led_6.setMargin(new Insets(1,1,1,1));
-		led_6.setBounds(4, 135, 50, 50);
+		led_6.setBounds(2, 68, 24, 24);
 		led_6.setBackground(new Color(0, 0, 0));
 		led_6.setBackground(new Color(0, 0, 0));
 		led_6.setForeground(new Color(120, 120, 120));
@@ -110,9 +110,9 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 		led_6.setOpaque(true);
 		add(led_6);
 		
-		led_5 = new JButton("LED 5");
+		led_5 = new JButton("5");
 		led_5.setMargin(new Insets(1,1,1,1));
-		led_5.setBounds(65, 200, 50, 50);
+		led_5.setBounds(28, 94, 24, 24);
 		led_5.setBackground(new Color(0, 0, 0));
 		led_5.setBackground(new Color(0, 0, 0));
 		led_5.setForeground(new Color(120, 120, 120));
@@ -120,9 +120,9 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 		led_5.setOpaque(true);
 		add(led_5);
 		
-		led_4 = new JButton("LED 4");
+		led_4 = new JButton("4");
 		led_4.setMargin(new Insets(1,1,1,1));
-		led_4.setBounds(135, 200, 50, 50);
+		led_4.setBounds(68, 94, 24, 24);
 		led_4.setBackground(new Color(0, 0, 0));
 		led_4.setBackground(new Color(0, 0, 0));
 		led_4.setForeground(new Color(120, 120, 120));
@@ -138,12 +138,6 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 		led_5.addActionListener(this);
 		led_6.addActionListener(this);
 		led_7.addActionListener(this);
-		
-		JPanel panel = new JPanel();
-		panel.setBackground(new Color(0, 0, 0));
-		panel.setForeground(new Color(0, 0, 0));
-		panel.setBounds(0, 115, 10, 20);
-		add(panel);
 		
 		
 	}
@@ -161,7 +155,7 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
             g2d.setPaint(Color.BLACK);
             g2d.setStroke(stroke);
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.drawRoundRect(2, 2, 250, 250, 20, 20);
+            g2d.drawRoundRect(0, 0, 119, 119, 5, 5);
         }
         finally {
             g2d.setPaint(oldPaint);
@@ -170,7 +164,6 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
         }
     }
 	
-	@Override
 	public void setColor(int ledId, Color color) {
 		switch (ledId) {
 		case 0:
@@ -202,12 +195,10 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 		}
 	}
 	
-	@Override
 	public void setColor(Color color) {
 		selectedButton.setBackground(color);
 	}
 	
-	@Override
 	public Color getColor(int ledId) {
 		switch (ledId) {
 		case 0:
@@ -231,7 +222,6 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 		}
 	}
 	
-	@Override
 	public int getSelectedButton() {
 		if (selectedButton == led_0)
 			return 0;
@@ -253,7 +243,6 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 		return 0;
 	}
 	
-	@Override
 	public Color getSelectedColor() {
 		return this.selectedButton.getBackground();
 	}
