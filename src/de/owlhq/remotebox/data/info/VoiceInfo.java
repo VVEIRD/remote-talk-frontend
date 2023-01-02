@@ -1,4 +1,4 @@
-package de.owlhq.remotebox.data;
+package de.owlhq.remotebox.data.info;
 
 public class VoiceInfo {
 

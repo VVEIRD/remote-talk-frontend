@@ -19,6 +19,7 @@ public class BlinkAnimator implements Runnable {
 	private int filterFrameNo = 0;
 	private boolean endless = false;
 	private boolean enabled = true;
+	private boolean running = false;
 	private int fps = 0;
 	private Color[] ledState = {Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK};
 	
@@ -42,6 +43,7 @@ public class BlinkAnimator implements Runnable {
 	}
 
 	public void startAnimation() {
+		this.enabled = true;
 		this.frames = this.ba.generate();
 		SwingUtilities.invokeLater(this);
 		this.daemon = new Thread(new BlinkDaemon());
@@ -51,7 +53,7 @@ public class BlinkAnimator implements Runnable {
 
 	public void stopAnimation() {
 		this.enabled = false;
-		while(!this.enabled) {
+		while(!this.enabled && this.running) {
 			try {
 				Thread.sleep(20);
 			} catch (InterruptedException e) {
@@ -59,10 +61,11 @@ public class BlinkAnimator implements Runnable {
 			}
 		}
 		this.daemon = null;
+		this.enabled = true;
 		pullColorsDown();
 	}
 
-	public boolean isRunning() {
+	public boolean isDaemonRunning() {
 		if (this.daemon == null)
 			return false;
 		return this.daemon.isAlive();
@@ -143,36 +146,40 @@ public class BlinkAnimator implements Runnable {
 
 		@Override
 		public void run() {
-			BlinkAnimator.this.enabled = true;
 			int frameTime = (1000/BlinkAnimator.this.ba.getFPS());
 			long lastFrameDrawn = System.currentTimeMillis();
 			int lastFrameCount = BlinkAnimator.this.frameDrawn;
 			int locFramesDrawn = 0;
-			while (BlinkAnimator.this.endless && BlinkAnimator.this.enabled) {
-				BlinkAnimator.this.frameNo = 0;
-				while(BlinkAnimator.this.frameNo < BlinkAnimator.this.frames.length && BlinkAnimator.this.enabled) {
-					long startTime = System.currentTimeMillis();
-					SwingUtilities.invokeLater(BlinkAnimator.this);
-					long endTime = System.currentTimeMillis();
-					//System.out.println("RGB [" + frameNo + "]: " + frames[frameNo][0][0] + ":" + frames[frameNo][1][0] + ":" + frames[frameNo][2][0]); 
-					try {	
-						Thread.sleep(frameTime-(endTime-startTime) > 0 ? frameTime-(endTime-startTime) : 0);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					if (lastFrameCount != BlinkAnimator.this.frameDrawn) {
-						locFramesDrawn += BlinkAnimator.this.frameDrawn-lastFrameCount;
-						lastFrameCount = BlinkAnimator.this.frameDrawn;
-					}
-					if (locFramesDrawn>30) {
-						long currentTime = System.currentTimeMillis();
-						int fps = (int) (1000/((currentTime - lastFrameDrawn)/locFramesDrawn));
-						BlinkAnimator.this.fps = fps;
-						lastFrameDrawn = currentTime;
-						locFramesDrawn = 0;
+			do {
+				BlinkAnimator.this.running = true;
+				if (BlinkAnimator.this.enabled) {
+					BlinkAnimator.this.frameNo = 0;
+					while(BlinkAnimator.this.frameNo < BlinkAnimator.this.frames.length && BlinkAnimator.this.enabled) {
+						long startTime = System.currentTimeMillis();
+						// Invoke Animation
+						SwingUtilities.invokeLater(BlinkAnimator.this);
+						long endTime = System.currentTimeMillis();
+						//System.out.println("RGB [" + frameNo + "]: " + frames[frameNo][0][0] + ":" + frames[frameNo][1][0] + ":" + frames[frameNo][2][0]); 
+						try {	
+							Thread.sleep(frameTime-(endTime-startTime) > 0 ? frameTime-(endTime-startTime) : 0);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						if (lastFrameCount != BlinkAnimator.this.frameDrawn) {
+							locFramesDrawn += BlinkAnimator.this.frameDrawn-lastFrameCount;
+							lastFrameCount = BlinkAnimator.this.frameDrawn;
+						}
+						if (locFramesDrawn>30) {
+							long currentTime = System.currentTimeMillis();
+							int fps = (int) (1000/((currentTime - lastFrameDrawn)/locFramesDrawn));
+							BlinkAnimator.this.fps = fps;
+							lastFrameDrawn = currentTime;
+							locFramesDrawn = 0;
+						}
 					}
 				}
-			}
+			} while (BlinkAnimator.this.endless && BlinkAnimator.this.enabled);
+			BlinkAnimator.this.running = false;
 			BlinkAnimator.this.enabled = true;
 		}
 		

@@ -1,4 +1,4 @@
-package de.owlhq.remotebox.data;
+package de.owlhq.remotebox.data.info;
 
 public class RtBoxInfo {
 	AudioInfo audio = null;
@@ -50,17 +50,28 @@ public class RtBoxInfo {
 	}
 	
 	public boolean hasAudioChanged(RtBoxInfo oldInfo) {
-		String oldCurrentlyPlaying = null;
-		String newCurrentlyPlaying = null;
+		String oldCurrentlyPlaying = "";
+		String newCurrentlyPlaying = "";
+		String oldRandomPlayback = "";
+		String newRandomPlayback = "";
+		int oldQueueLength = 0;
+		int newQueueLength = 0;
 		// Determine old state
 		if (oldInfo != null && oldInfo.getAudio() != null && oldInfo.getAudio().getStatus() != null) {
 			oldCurrentlyPlaying = oldInfo.getAudio().getStatus().getCurrently_playing();
+			oldRandomPlayback = oldInfo.getAudio().getRandom_playback().getStatus();
+			oldQueueLength = oldInfo.getAudio().getStatus().getQueue_count();
 		}
 		// Determine current state
 		if (this.getAudio() != null && this.getAudio().getStatus() != null) {
 			newCurrentlyPlaying = this.getAudio().getStatus().getCurrently_playing();
+			newRandomPlayback = this.getAudio().getRandom_playback().getStatus();
+			newQueueLength = this.getAudio().getStatus().getQueue_count();
 		}
-		return oldCurrentlyPlaying != newCurrentlyPlaying;
+		return oldCurrentlyPlaying == null && newCurrentlyPlaying != null 
+				|| oldCurrentlyPlaying != null && !oldCurrentlyPlaying.equals(newCurrentlyPlaying) 
+				|| !oldRandomPlayback.equals(newRandomPlayback) 
+				|| oldQueueLength != newQueueLength;
 	}
 	
 	public boolean hasAudioStopped(RtBoxInfo oldInfo) {

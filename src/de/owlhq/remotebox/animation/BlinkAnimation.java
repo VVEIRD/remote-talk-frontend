@@ -178,15 +178,15 @@ public class BlinkAnimation {
 	}
 	
 	private float[][][] generatePulse() {
-		System.out.println("Generating pulse");
+		//System.out.println("Generating pulse");
     	float[][][] frames = new float[0][0][0];
         int duration = this.duration_ms;
 		this.duration_ms = this.duration_ms/2;
     	for (int i=0;i<this.loop;i++) {
     		float[][][] g1 = this.generateMorph(false, false);
-    		System.out.println("Generated morph 1, Length: " + g1.length);
+    		//System.out.println("Generated morph 1, Length: " + g1.length);
     		float[][][] g2 = this.generateMorph(true, false);
-    		System.out.println("Generated morph 2, Length: " + g2.length);
+    		//System.out.println("Generated morph 2, Length: " + g2.length);
     		float[][][] nFrames = new float[g1.length+g2.length+frames.length][][];
     		for (int n=0;n<frames.length;n++) {
     			nFrames[n] = frames[n];
@@ -215,7 +215,7 @@ public class BlinkAnimation {
 			for (int i=0;i<steps;i++) {
 				float[][] leds = new float[led_count][3];
 				float d = 1.0f * i / steps;
-				System.out.println("D: " + d);
+				//System.out.println("D: " + d);
 				for (int l=0;l<led_count;l++) {
 					float r_start = source_color[l].getRed();
 					float g_start = source_color[l].getGreen();

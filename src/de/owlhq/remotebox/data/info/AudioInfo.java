@@ -1,4 +1,4 @@
-package de.owlhq.remotebox.data;
+package de.owlhq.remotebox.data.info;
 
 import java.util.List;
 
@@ -63,6 +63,7 @@ public class AudioInfo {
 		int min_interval = 900;
 		String next_up = null;
 		String played_at = null;
+		String status = "";
 		public List<String> getList() {
 			return list;
 		}
@@ -92,6 +93,12 @@ public class AudioInfo {
 		}
 		public void setPlayed_at(String played_at) {
 			this.played_at = played_at;
+		}
+		public String getStatus() {
+			return status;
+		}
+		public void setStatus(String status) {
+			this.status = status;
 		}
 	}
 }

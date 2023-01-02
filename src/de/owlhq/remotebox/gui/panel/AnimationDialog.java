@@ -30,9 +30,9 @@ import com.jgoodies.forms.layout.RowSpec;
 import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
 import de.owlhq.remotebox.animation.BlinkAnimator;
-import de.owlhq.remotebox.network.RtDeviceEvent;
-import de.owlhq.remotebox.network.RtDeviceListener;
 import de.owlhq.remotebox.animation.BlinkAnimation.BlinkTypes;
+import de.owlhq.remotebox.events.RtDeviceEvent;
+import de.owlhq.remotebox.events.RtDeviceListener;
 
 import com.jgoodies.forms.layout.FormSpecs;
 import javax.swing.JButton;
@@ -290,7 +290,7 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 					BlinkAnimation ba = AnimationDialog.this.getAnimation();
 					AnimationDialog.this.blinkFilterFrameAnimator = new BlinkAnimator(ba, AnimationDialog.this.filterFrameLedPanel, AnimationDialog.this.lblFilterFramesFPS, true);
 				}
-        		if (AnimationDialog.this.blinkFilterFrameAnimator.isRunning()) {
+        		if (AnimationDialog.this.blinkFilterFrameAnimator.isDaemonRunning()) {
         			AnimationDialog.this.blinkFilterFrameAnimator.stopAnimation();
         		}
         		else {
@@ -610,7 +610,7 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 					BlinkAnimation ba = AnimationDialog.this.getAnimation();
 					AnimationDialog.this.blinkPreviewAnimator = new BlinkAnimator(ba, AnimationDialog.this.previewLedPanel, true);
 				}
-				if(!AnimationDialog.this.blinkPreviewAnimator.isRunning()) {
+				if(!AnimationDialog.this.blinkPreviewAnimator.isDaemonRunning()) {
 					AnimationDialog.this.blinkPreviewAnimator.reset();
 					AnimationDialog.this.blinkPreviewAnimator.startAnimation();
 				}

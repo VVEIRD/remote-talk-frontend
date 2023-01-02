@@ -7,8 +7,8 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
 import de.owlhq.remotebox.BlinkApp;
-import de.owlhq.remotebox.network.RtDeviceEvent;
-import de.owlhq.remotebox.network.RtDeviceListener;
+import de.owlhq.remotebox.events.RtDeviceEvent;
+import de.owlhq.remotebox.events.RtDeviceListener;
 
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;

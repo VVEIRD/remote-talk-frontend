@@ -9,6 +9,7 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import com.google.gson.Gson;
@@ -20,7 +21,7 @@ import com.vmichalak.protocol.ssdp.Device;
 
 import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
-import de.owlhq.remotebox.data.RtBoxInfo;
+import de.owlhq.remotebox.data.info.RtBoxInfo;
 
 public class RtBoxDevice {
 
@@ -28,6 +29,8 @@ public class RtBoxDevice {
 	private String urlRoot     = null;
 	private String ip          = null;
 	private String serviceType = null;
+	
+	private RtBoxInfo lastStatus = null;
 	
 	public RtBoxDevice(Device ssdpDevice) {
 		this.deviceName = ssdpDevice.getUSN();
@@ -70,6 +73,10 @@ public class RtBoxDevice {
 	
 	public boolean isSelectedDevice() {
 		return BlinkApp.getSelectedDevice() == this;
+	}
+	
+	public RtBoxInfo getLastStatus() {
+		return lastStatus;
 	}
 	
 	public JsonObject callEndpoint(String urlString, String method) {
@@ -115,23 +122,37 @@ public class RtBoxDevice {
 				e.printStackTrace();
 			}
 		}
+		this.lastStatus = rt;
 		return rt;
 	}
 
-	public String[] getBlinkAnimationList() {
+	public List<String> getBlinkAnimationList() {
 		RtBoxInfo rt = getStatus();
 		if (rt != null)
 			return rt.getLed().getBlinks();
-		return null;
+		return new LinkedList<>();
+	}
+
+	public List<String> getAudioFiles() {
+		RtBoxInfo rt = getStatus();
+		if (rt != null)
+			return rt.getAudio().getAudio_files();
+		return new LinkedList<>();
 	}
 	
 	public BlinkAnimation getAnimation(String animationName) {
 		RtBoxInfo rt = getStatus();
 		if (isReachable()) {
-			List<String> blinks = Arrays.asList(rt.getLed().getBlinks());
+			List<String> blinks = rt.getLed().getBlinks();
 			if (blinks.contains(animationName)) {
 				JsonObject json = this.callEndpoint(this.urlRoot + "/blink/" + animationName, "GET");
-				return new Gson().fromJson(json, BlinkAnimation.class);
+				if (json != null) {
+					try {
+						return new Gson().fromJson(json, BlinkAnimation.class);
+					} catch (JsonSyntaxException e) {
+						e.printStackTrace();
+					}
+				}
 			}
 		}
 		return null;
@@ -147,6 +168,25 @@ public class RtBoxDevice {
 					try {
 						String status = json.get("status").getAsString();
 						return status == "blink queued";
+					} catch (ClassCastException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
+	public boolean playAudio(String audioName) {
+		if (isReachable()) {
+			RtBoxInfo rt = getStatus();
+			List<String> audioFiles = rt.getAudio().getAudio_files();
+			if (audioFiles.contains(audioName)) {
+				JsonObject json = this.callEndpoint(this.urlRoot + "/audio/play/" + audioName, "GET");
+				if (json.get("status") != null && json.get("status").isJsonPrimitive()) {
+					try {
+						String status = json.get("status").getAsString();
+						return status == "Audio queued";
 					} catch (ClassCastException e) {
 						e.printStackTrace();
 					}

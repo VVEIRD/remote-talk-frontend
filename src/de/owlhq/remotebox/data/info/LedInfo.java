@@ -1,24 +1,24 @@
-package de.owlhq.remotebox.data;
+package de.owlhq.remotebox.data.info;
 
 import java.util.Arrays;
 import java.util.List;
 
 public class LedInfo {
 
-	String[] blinks = null;
+	List<String> blinks = null;
 	
 	BlinkDevice[] devices = null;
 	
 	
-	public String[] getBlinks() {
+	public List<String> getBlinks() {
 		return blinks;
 	}
 
 	public List<String> getBlinkAsList() {
-		return Arrays.asList(this.blinks);
+		return this.blinks;
 	}
 
-	public void setBlinks(String[] blinks) {
+	public void setBlinks(List<String> blinks) {
 		this.blinks = blinks;
 	}
 

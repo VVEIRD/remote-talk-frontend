@@ -1,10 +1,12 @@
 package de.owlhq.remotebox.gui.panel;
 
 import javax.swing.JPanel;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.border.LineBorder;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.util.List;
 
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
@@ -20,6 +22,7 @@ public class AudioControlPanel extends JPanel {
 	private JLabel lblCurrentyPlaying;
 	private JLabel lblStartingAt;
 	private JList listQueue;
+	private JLabel lblRndPlaybackEnabled;
 
 	/**
 	 * Create the panel.
@@ -59,11 +62,11 @@ public class AudioControlPanel extends JPanel {
 		lblNewLabel.setBounds(10, 11, 170, 14);
 		pnRandom.add(lblNewLabel);
 		
-		JLabel lblNewLabel_1 = new JLabel("Enabled");
-		lblNewLabel_1.setForeground(Color.GREEN);
-		lblNewLabel_1.setHorizontalAlignment(SwingConstants.TRAILING);
-		lblNewLabel_1.setBounds(190, 13, 79, 14);
-		pnRandom.add(lblNewLabel_1);
+		lblRndPlaybackEnabled = new JLabel("Enabled");
+		lblRndPlaybackEnabled.setForeground(Color.GREEN);
+		lblRndPlaybackEnabled.setHorizontalAlignment(SwingConstants.TRAILING);
+		lblRndPlaybackEnabled.setBounds(190, 13, 79, 14);
+		pnRandom.add(lblRndPlaybackEnabled);
 		
 		JLabel lblNewLabel_2 = new JLabel("Next Up:");
 		lblNewLabel_2.setBounds(10, 129, 60, 14);
@@ -114,7 +117,7 @@ public class AudioControlPanel extends JPanel {
 		JLabel lblNewLabel_2_2 = new JLabel("Currently Playing:");
 		panelAudio.add(lblNewLabel_2_2, "2, 6, 3, 1, fill, top");
 		
-		listQueue = new JList();
+		listQueue = new JList(new DefaultListModel<>());
 		panelAudio.add(listQueue, "6, 4, 1, 5, fill, fill");
 		
 		JLabel lblNewLabel_2_2_1 = new JLabel("Queue");
@@ -122,6 +125,30 @@ public class AudioControlPanel extends JPanel {
 		
 		lblCurrentyPlaying = new JLabel("NOTHING");
 		panelAudio.add(lblCurrentyPlaying, "2, 8, 3, 1, fill, top");
+	}
+	
+	public void updateQueue(List<String> newQueue) {
+		DefaultListModel listmodel = (DefaultListModel)listQueue.getModel();
+		listmodel.removeAllElements();
+		for (String queue : newQueue) {
+			listmodel.addElement(queue);
+		}
+	}
 
+	public void updateCurrentlyPlaying(String currently_playing) {
+		lblCurrentyPlaying.setText(currently_playing);
+	}
+
+	public void updateRandomPlaybackEnabled(boolean enabled) {
+		lblRndPlaybackEnabled.setText(enabled ? "Enabled" : "Disabled");
+		lblRndPlaybackEnabled.setForeground(enabled ? Color.GREEN.darker() : Color.BLACK);
+	}
+
+	public void updateRandomPlaybackNextUp(String next_up) {
+		lblNextUp.setText(next_up);
+	}
+
+	public void updateRandomPlaybackNextUpTime(String played_at) {
+		lblStartingAt.setText(played_at);
 	}
 }

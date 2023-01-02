@@ -19,7 +19,8 @@ import com.vmichalak.protocol.ssdp.SSDPClient;
 import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
 import de.owlhq.remotebox.animation.BlinkAnimator;
-import de.owlhq.remotebox.data.RtBoxInfo;
+import de.owlhq.remotebox.data.info.RtBoxInfo;
+import de.owlhq.remotebox.gui.frame.EffectCreatorDialog;
 import de.owlhq.remotebox.gui.panel.AnimationDialog;
 import de.owlhq.remotebox.gui.panel.LedInterface;
 import de.owlhq.remotebox.gui.panel.LedPanel;
@@ -72,6 +73,7 @@ public class MainTest {
 		}
 	    System.out.println(BlinkApp.getConfig("ASDF"));;
 	    BlinkApp.showStartupDialog();
+	    new EffectCreatorDialog().setVisible(true);
 	    List<String> files = BlinkApp.getSelectedDeviceAudioController().getAudioFiles();
 	    for (String file : files) {
 			System.out.println("AudioFile: " + file);

@@ -21,6 +21,8 @@ public class LedControlPanel extends JPanel {
 	private BlinkAnimator bA = null;
 	
 	private boolean enabled = true;
+	private JLabel lblAnimationName;
+	private JLabel lblEndless;
 
 	/**
 	 * Create the panel.
@@ -52,7 +54,7 @@ public class LedControlPanel extends JPanel {
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				LedControlPanel.this.enabled = !LedControlPanel.this.enabled;
-				if (LedControlPanel.this.enabled) {
+				if (!LedControlPanel.this.enabled) {
 					btnNewButton.setText("Enable Preview");
 				}
 				else {
@@ -83,9 +85,9 @@ public class LedControlPanel extends JPanel {
 		lblNewLabel.setBounds(0, 0, 120, 14);
 		panel.add(lblNewLabel);
 		
-		JLabel lblNewLabel_1 = new JLabel("NOTHING");
-		lblNewLabel_1.setBounds(0, 18, 120, 14);
-		panel.add(lblNewLabel_1);
+		lblAnimationName = new JLabel("NOTHING");
+		lblAnimationName.setBounds(0, 18, 120, 14);
+		panel.add(lblAnimationName);
 		
 		JLabel lblNewLabel_2 = new JLabel("Endless");
 		lblNewLabel_2.setVerticalAlignment(SwingConstants.BOTTOM);
@@ -93,9 +95,9 @@ public class LedControlPanel extends JPanel {
 		lblNewLabel_2.setBounds(0, 43, 46, 14);
 		panel.add(lblNewLabel_2);
 		
-		JLabel lblNewLabel_3 = new JLabel("No");
-		lblNewLabel_3.setBounds(0, 60, 120, 14);
-		panel.add(lblNewLabel_3);
+		lblEndless = new JLabel("No");
+		lblEndless.setBounds(0, 60, 120, 14);
+		panel.add(lblEndless);
 	}
 	
 	public void playAnimation(BlinkAnimation animation, boolean endless) {
@@ -106,5 +108,20 @@ public class LedControlPanel extends JPanel {
 		this.bA = new BlinkAnimator(animation, ledPreviewPanel, endless);
 		if (enabled)
 			this.bA.startAnimation();
+	}
+	
+	public void stopAnimation() {
+		if (this.bA != null) {
+			this.bA.stopAnimation();
+			this.bA = null;
+		}
+	}
+
+	public void setAnimationName(String animationName) {
+		this.lblAnimationName.setText(animationName);
+	}
+
+	public void setAnimationEndless(boolean endless) {
+		this.lblEndless.setText(endless ? "Yes" : "No");
 	}
 }

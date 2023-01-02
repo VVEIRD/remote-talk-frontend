@@ -20,7 +20,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 
-import de.owlhq.remotebox.data.AudioInfo;
+import de.owlhq.remotebox.data.info.AudioInfo;
 import de.owlhq.remotebox.device.RtBoxDevice;
 
 public class AudioControl {

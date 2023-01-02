@@ -1,4 +1,4 @@
-package de.owlhq.remotebox.network;
+package de.owlhq.remotebox.events;
 
 public interface RtDeviceListener {
 
