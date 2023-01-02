@@ -21,60 +21,23 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 
 import de.owlhq.remotebox.data.AudioInfo;
-import de.owlhq.remotebox.device.BlinkDevice;
+import de.owlhq.remotebox.device.RtBoxDevice;
 
 public class AudioControl {
 	
 	private static final String AUDIO_ENDPOINT = "/audio";
 	
-	private BlinkDevice device = null;
+	private RtBoxDevice device = null;
 
-	public AudioControl(BlinkDevice device) {
+	public AudioControl(RtBoxDevice device) {
 		super();
 		this.device = device;
-	}
-	
-	private JsonObject callEndpoint(String urlString, String method) {
-		String data = null;
-		JsonObject json = null;
-		try {
-			URL url = new URL(urlString);
-			HttpURLConnection con = (HttpURLConnection) url.openConnection();
-			con.setRequestMethod(method);
-			BufferedReader br = null;
-			if (100 <= con.getResponseCode() && con.getResponseCode() <= 399) {
-				br = new BufferedReader(new InputStreamReader(con.getInputStream()));
-			} 
-			else {
-			    br = new BufferedReader(new InputStreamReader(con.getErrorStream()));
-			}
-			char[] buff = new char[con.getContentLengthLong() >= 0 ? con.getContentLength() : 24576];
-			int read = br.read(buff);
-			buff = Arrays.copyOf(buff, read);
-			data = new String(buff);
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (ProtocolException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		if (data != null) {
-			System.out.println(data);
-			JsonParser parser = new JsonParser();
-			try {
-				json = (JsonObject) parser.parse(data);
-			} catch (JsonSyntaxException e) {
-				e.printStackTrace();
-			}
-		}
-		return json;
 	}
 	
 	public List<String> getAudioFiles() {
 		List<String> audioFiles = new LinkedList<>();
 		System.out.println(device.getUrlRoot() + AUDIO_ENDPOINT);
-		JsonObject json = callEndpoint(device.getUrlRoot() + AUDIO_ENDPOINT, "GET");
+		JsonObject json = this.device.callEndpoint(device.getUrlRoot() + AUDIO_ENDPOINT, "GET");
 		if (json != null && json.get("audio") != null) {
 			try {
 				AudioInfo aInfo = new Gson().fromJson(json.get("audio"), AudioInfo.class);

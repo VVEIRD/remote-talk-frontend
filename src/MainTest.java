@@ -19,6 +19,7 @@ import com.vmichalak.protocol.ssdp.SSDPClient;
 import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
 import de.owlhq.remotebox.animation.BlinkAnimator;
+import de.owlhq.remotebox.data.RtBoxInfo;
 import de.owlhq.remotebox.gui.panel.AnimationDialog;
 import de.owlhq.remotebox.gui.panel.LedInterface;
 import de.owlhq.remotebox.gui.panel.LedPanel;
@@ -75,5 +76,20 @@ public class MainTest {
 	    for (String file : files) {
 			System.out.println("AudioFile: " + file);
 		}
+	    RtBoxInfo rtInfo = BlinkApp.getSelectedDeviceStatus();
+	    System.out.println("-------------------------------------------------------");
+	    System.out.println("Status:");
+	    System.out.println("-------------------------------------------------------");
+	    System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(rtInfo));
+	    System.out.println("-------------------------------------------------------");
+	    if (rtInfo.getLed().getCurrentlyPlaying() != null) {
+		    System.out.println("Currently Playing:");
+		    System.out.println("-------------------------------------------------------");
+		    System.out.println(rtInfo.getLed().getCurrentlyPlaying().getBlink());
+		    if (rtInfo.getLed().getCurrentlyPlaying().isEndless()) 
+			    System.out.println("Endlessly");
+		    System.out.println("-------------------------------------------------------");
+		    System.out.println(BlinkApp.getSelectedDevice().getAnimation(rtInfo.getLed().getCurrentlyPlaying().getBlink()));
+	    }
 	}
 }

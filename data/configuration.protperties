@@ -1,7 +1,10 @@
 #
-#Sun Jan 01 21:22:56 CET 2023
+#Mon Jan 02 15:19:30 CET 2023
 de.owlhq.customDevices=0
-de.owlhq.selectedDevice=remote-talk-box-66504346644651
+de.owlhq.daemon.change.sleep=2500
+de.owlhq.daemon.network.sleep=5000
+de.owlhq.selectedDevice={"deviceName"\:"remote-talk-box-66504346644651","urlRoot"\:"http\://192.168.20.91\:5020/rt-box","ip"\:"192.168.20.91","serviceType"\:"remote-box-client"}
+de.owlhq.selectedDeviceUsn=remote-talk-box-66504346644651
 de.owlhq.voice.ip=192.169.20.91
 de.owlhq.voice.password=ai-cube-12345
 de.owlhq.voice.port=12000

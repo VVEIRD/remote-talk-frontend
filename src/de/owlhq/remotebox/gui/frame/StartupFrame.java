@@ -7,8 +7,8 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
 import de.owlhq.remotebox.BlinkApp;
-import de.owlhq.remotebox.network.DeviceNetworkEvent;
-import de.owlhq.remotebox.network.DeviceNetworkListener;
+import de.owlhq.remotebox.network.RtDeviceEvent;
+import de.owlhq.remotebox.network.RtDeviceListener;
 
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
@@ -129,6 +129,7 @@ public class StartupFrame extends JFrame {
 				BlinkApp.setConfig("de.owlhq.voice.port", String.valueOf((Integer)spVoiceHostPort.getValue()));
 				BlinkApp.setConfig("de.owlhq.voice.username", tfVoiceUsername.getText());
 				BlinkApp.setConfig("de.owlhq.voice.password", tfPassword.getText());
+				BlinkApp.selectDevice((String)cbRemoteBox.getSelectedItem());
 				BlinkApp.saveConfig();
 				StartupFrame.this.setVisible(false);
 				StartupFrame.this.dispose();
@@ -157,10 +158,10 @@ public class StartupFrame extends JFrame {
 		for(String name: BlinkApp.getDeviceNames()) {
 			cbRemoteBox.addItem(name);
 		}
-		BlinkApp.addDeviceNetworkListener(new DeviceNetworkListener() {
+		BlinkApp.addRtDeviceListener(new RtDeviceListener() {
 			@Override
-			public void deviceNetworkChange(DeviceNetworkEvent e) {
-				if (e.eventType == DeviceNetworkEvent.DEVICE_CONNECTED)
+			public void deviceChange(RtDeviceEvent e) {
+				if (e.eventType == RtDeviceEvent.DEVICE_CONNECTED)
 					cbRemoteBox.addItem(e.source.getDeviceName());
 				else {
 					cbRemoteBox.removeAllItems();

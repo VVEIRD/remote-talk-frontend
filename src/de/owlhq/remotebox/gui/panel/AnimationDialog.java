@@ -30,8 +30,8 @@ import com.jgoodies.forms.layout.RowSpec;
 import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
 import de.owlhq.remotebox.animation.BlinkAnimator;
-import de.owlhq.remotebox.network.DeviceNetworkEvent;
-import de.owlhq.remotebox.network.DeviceNetworkListener;
+import de.owlhq.remotebox.network.RtDeviceEvent;
+import de.owlhq.remotebox.network.RtDeviceListener;
 import de.owlhq.remotebox.animation.BlinkAnimation.BlinkTypes;
 
 import com.jgoodies.forms.layout.FormSpecs;
@@ -556,11 +556,11 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 		cbRemoteBox = new JComboBox(blinkDevices);
 		cbRemoteBox.setEnabled(false);
 		panPreview.add(cbRemoteBox, "30, 32, 17, 1, fill, default");
-		BlinkApp.addDeviceNetworkListener(new DeviceNetworkListener() {
+		BlinkApp.addRtDeviceListener(new RtDeviceListener() {
 			
 			@Override
-			public void deviceNetworkChange(DeviceNetworkEvent e) {
-				if (e.eventType == DeviceNetworkEvent.DEVICE_CONNECTED)
+			public void deviceChange(RtDeviceEvent e) {
+				if (e.eventType == RtDeviceEvent.DEVICE_CONNECTED)
 					cbRemoteBox.addItem(e.source.getDeviceName());
 				else {
 					cbRemoteBox.removeAllItems();

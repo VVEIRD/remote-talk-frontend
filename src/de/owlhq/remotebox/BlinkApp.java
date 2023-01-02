@@ -24,28 +24,35 @@ import com.vmichalak.protocol.ssdp.SSDPClient;
 
 import de.owlhq.remotebox.animation.BlinkAnimation;
 import de.owlhq.remotebox.audio.AudioControl;
-import de.owlhq.remotebox.device.BlinkDevice;
+import de.owlhq.remotebox.data.AudioInfo;
+import de.owlhq.remotebox.data.RtBoxInfo;
+import de.owlhq.remotebox.device.RtBoxDevice;
 import de.owlhq.remotebox.gui.frame.MainFrame;
 import de.owlhq.remotebox.gui.frame.StartupFrame;
-import de.owlhq.remotebox.network.DeviceNetworkEvent;
-import de.owlhq.remotebox.network.DeviceNetworkListener;
+import de.owlhq.remotebox.network.RtDeviceEvent;
+import de.owlhq.remotebox.network.RtDeviceListener;
 
 public class BlinkApp {
 
 	private static Thread deviceFinderDaemon = null;
+	
+	private static Thread selectedDeviceChangeDaemon = null;
+	
 	private static boolean daemonRunning = true;
 	
 	private static String ssdpDeviceName = "remote-box-client";
 
-	private static Map<String, BlinkDevice> ALL_DEVICES = null;
+	private static RtBoxDevice SELECTED_DEVICE = null;
+
+	private static Map<String, RtBoxDevice> ALL_DEVICES = null;
 	
-	private static Map<String, BlinkDevice> NETWORK_DEVICES = null;
+	private static Map<String, RtBoxDevice> NETWORK_DEVICES = null;
 	
-	private static Map<String, BlinkDevice> CUSTOM_DEVICES = null;
+	private static Map<String, RtBoxDevice> CUSTOM_DEVICES = null;
 
 	private static Map<String, AudioControl> AUDIO_CONTROLLER = null;
 	
-	private static List<DeviceNetworkListener> deviceListener = new ArrayList<DeviceNetworkListener>(2);
+	private static List<RtDeviceListener> deviceListener = new ArrayList<RtDeviceListener>(2);
 	
 	private static Properties CONFIGURATION = null;
 	private static JFrame CURRENT_WINDOW;
@@ -70,12 +77,14 @@ public class BlinkApp {
 		// add coustom device count
 		if (!CONFIGURATION.containsKey("de.owlhq.customDevices")) {
 			CONFIGURATION.setProperty("de.owlhq.customDevices", "0");
+			CONFIGURATION.setProperty("de.owlhq.daemon.network.sleep", "5000");
+			CONFIGURATION.setProperty("de.owlhq.daemon.change.sleep", "2500");
 		}
 		for (int i=0;i<getConfigInt("de.owlhq.customDevices");i++) {
 			String deviceJson = getConfig("de.owlhq.customDevice."+i);
 			Gson gson = new GsonBuilder().create();
 			try {
-				BlinkDevice bd = gson.fromJson(deviceJson, BlinkDevice.class);
+				RtBoxDevice bd = gson.fromJson(deviceJson, RtBoxDevice.class);
 				CUSTOM_DEVICES.put(bd.getDeviceName(), bd);
 			}
 			catch(JsonSyntaxException  e) {
@@ -86,10 +95,18 @@ public class BlinkApp {
 			CONFIGURATION.setProperty("de.owlhq.customDevices", "0");
 		}
 		// add selected device and store configuration
-		if (!loaded || !CONFIGURATION.contains("de.owlhq.selectedDevice") || CONFIGURATION.getProperty("de.owlhq.selectedDevice").equals("")) {
-			CONFIGURATION.setProperty("de.owlhq.selectedDevice", ALL_DEVICES.keySet().isEmpty() ? "" : ALL_DEVICES.keySet().iterator().next());
+		if (!loaded || !CONFIGURATION.contains("de.owlhq.selectedDeviceUsn") || CONFIGURATION.getProperty("de.owlhq.selectedDeviceUsn").equals("")) {
+			CONFIGURATION.setProperty("de.owlhq.selectedDeviceUsn", ALL_DEVICES.keySet().isEmpty() ? "" : ALL_DEVICES.keySet().iterator().next());
 			storeConfiguration();
 		}
+		// Set SELECTED_DEVICE
+		if (ALL_DEVICES.containsKey(getConfig("de.owlhq.selectedDeviceUsn"))) {
+			SELECTED_DEVICE  = ALL_DEVICES.get(getConfig("de.owlhq.selectedDeviceUsn"));
+		}
+		else {
+			SELECTED_DEVICE = new Gson().fromJson(getConfig("de.owlhq.selectedDevice"), RtBoxDevice.class);
+		}
+		AUDIO_CONTROLLER.put(SELECTED_DEVICE.getDeviceName(), new AudioControl(SELECTED_DEVICE));
 		findDevices();
 		deviceFinderDaemon = new Thread(new Runnable() {
 			@Override
@@ -97,7 +114,7 @@ public class BlinkApp {
 				while(daemonRunning) {
 					findDevices();
 					try {
-						Thread.sleep(5000);
+						Thread.sleep(getConfigInt("de.owlhq.daemon.network.sleep"));
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -106,6 +123,26 @@ public class BlinkApp {
 		});
 		deviceFinderDaemon.setDaemon(true);
 		deviceFinderDaemon.start();
+		selectedDeviceChangeDaemon = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				updateSelectedDeviceStatus();
+			}
+		});
+		selectedDeviceChangeDaemon.setDaemon(true);
+		selectedDeviceChangeDaemon.start();
+		addRtDeviceListener(new RtDeviceListener() {
+			
+			@Override
+			public void deviceChange(RtDeviceEvent e) {
+				System.out.println("-------------------------------------------");
+				System.out.println("Device Changed: ");
+				System.out.println("-------------------------------------------");
+				System.out.println("Name:   " + e.source.getDeviceName());
+				System.out.println("Change: " + e.eventType);
+				System.out.println("-------------------------------------------");
+			}
+		});
 	}
 
 	private static void storeConfiguration() {
@@ -138,26 +175,26 @@ public class BlinkApp {
 				else {
 					existingDevices.add(device.getUSN());
 				}
-				NETWORK_DEVICES.put(device.getUSN(), new BlinkDevice(device));
+				NETWORK_DEVICES.put(device.getUSN(), new RtBoxDevice(device));
 			}
 			removedDevices.addAll(new LinkedList<>(NETWORK_DEVICES.keySet()));
 			removedDevices.removeAll(newDevices);
 			removedDevices.removeAll(existingDevices);
+			for (String device : removedDevices) {
+				NETWORK_DEVICES.remove(device);
+			}
+			// Updated Device Listener
 			for (String deviceName : newDevices) {
-				DeviceNetworkEvent e = new DeviceNetworkEvent(NETWORK_DEVICES.get(deviceName), DeviceNetworkEvent.DEVICE_CONNECTED);
-				for (DeviceNetworkListener listener : deviceListener) {
-					listener.deviceNetworkChange(e);
-				}
+				RtDeviceEvent e = new RtDeviceEvent(NETWORK_DEVICES.get(deviceName), RtDeviceEvent.DEVICE_CONNECTED);
+				informDeviceListener(e);
 			}
 			for (String deviceName : removedDevices) {
-				DeviceNetworkEvent e = new DeviceNetworkEvent(NETWORK_DEVICES.get(deviceName), DeviceNetworkEvent.DEVICE_DISCONNECTED);
-				for (DeviceNetworkListener listener : deviceListener) {
-					listener.deviceNetworkChange(e);
-				}
+				RtDeviceEvent e = new RtDeviceEvent(NETWORK_DEVICES.get(deviceName), RtDeviceEvent.DEVICE_DISCONNECTED);
+				informDeviceListener(e);
 			}
 			// Update ALL_DEVICES on change
 			if (newDevices.size() != 0 || removedDevices.size() != 0) {
-				Map<String, BlinkDevice> new_all_devices = new HashMap<>();
+				Map<String, RtBoxDevice> new_all_devices = new HashMap<>();
 				new_all_devices.putAll(NETWORK_DEVICES);
 				new_all_devices.putAll(CUSTOM_DEVICES);
 				ALL_DEVICES = new_all_devices;
@@ -165,9 +202,15 @@ public class BlinkApp {
 					AUDIO_CONTROLLER.clear();
 					AUDIO_CONTROLLER.put(usn, new AudioControl(ALL_DEVICES.get(usn)));
 				}
-				if (!ALL_DEVICES.containsKey(CONFIGURATION.getProperty("de.owlhq.selectedDevice"))) {
-					CONFIGURATION.setProperty("de.owlhq.selectedDevice", ALL_DEVICES.keySet().isEmpty() ? "" : ALL_DEVICES.keySet().iterator().next());
+				if (!ALL_DEVICES.containsKey(CONFIGURATION.getProperty("de.owlhq.selectedDeviceUsn"))) {
+					System.out.println("Selected Device not reachable");
+					SELECTED_DEVICE = new Gson().fromJson(getConfig("de.owlhq.selectedDevice"), RtBoxDevice.class);
+					AUDIO_CONTROLLER.put(SELECTED_DEVICE.getDeviceName(), new AudioControl(SELECTED_DEVICE));
+					//CONFIGURATION.setProperty("de.owlhq.selectedDeviceUsn", ALL_DEVICES.keySet().isEmpty() ? "" : ALL_DEVICES.keySet().iterator().next());
 					storeConfiguration();
+				}
+				else {
+					SELECTED_DEVICE = ALL_DEVICES.get(getConfig("de.owlhq.selectedDeviceUsn"));
 				}
 			}
 		} catch (IOException e) {
@@ -175,40 +218,117 @@ public class BlinkApp {
 		}
 	}
 	
-	public static Map<String, BlinkDevice> getDevices() {
+	private static void updateSelectedDeviceStatus() {
+		RtBoxInfo lastKnownState = null;
+		if (SELECTED_DEVICE != null) {
+			lastKnownState = SELECTED_DEVICE.getStatus();
+		}
+		while (daemonRunning) {
+			if (SELECTED_DEVICE != null) {
+				RtBoxInfo currentKnownState  = SELECTED_DEVICE.getStatus();
+				// Connect & Disconnect Events are handled by findDevices()
+				// Animation Events
+				// Stop Animation Event
+				if (currentKnownState != null && currentKnownState.hasAnimationStopped(lastKnownState)) {
+					RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.ANIMATION_STOPPED);
+					informDeviceListener(rtEvent);
+				}
+				// Start Animation Event
+				if (currentKnownState != null && (currentKnownState.hasAnimationStarted(lastKnownState) || currentKnownState.hasAnimationChanged(lastKnownState) && !currentKnownState.hasAnimationStopped(lastKnownState))) {
+					RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.ANIMATION_CHANGED);
+					informDeviceListener(rtEvent);
+				}
+				// Stop Audio Event
+				if (currentKnownState != null && currentKnownState.hasAudioStopped(lastKnownState)) {
+					RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.AUDIO_STOPPED);
+					informDeviceListener(rtEvent);
+				}
+				// Start Audio Event
+				if (currentKnownState != null && (currentKnownState.hasAudioStarted(lastKnownState) || currentKnownState.hasAudioChanged(lastKnownState) && !currentKnownState.hasAudioStopped(lastKnownState))) {
+					RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.AUDIO_STARTED);
+					informDeviceListener(rtEvent);
+				}
+				// Disconnect Voice Event
+				if (currentKnownState != null && currentKnownState.hasVoiceDisconnected(lastKnownState)) {
+					RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.VOICE_DISCONNECTED);
+					informDeviceListener(rtEvent);
+				}
+				// Connect Voice Event
+				if (currentKnownState != null && (currentKnownState.hasVoiceConnected(lastKnownState) || currentKnownState.hasVoiceChanged(lastKnownState) && !currentKnownState.hasVoiceDisconnected(lastKnownState))) {
+					RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.VOICE_CONNECTED);
+					informDeviceListener(rtEvent);
+				}
+				lastKnownState = currentKnownState;
+			}
+			else  {
+				lastKnownState = null;
+			}
+			try {
+				Thread.sleep(getConfigInt("de.owlhq.daemon.change.sleep"));
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+
+	private static void informDeviceListener(RtDeviceEvent rtEvent) {
+		for (RtDeviceListener deviceListener : deviceListener) {
+			try {
+				deviceListener.deviceChange(rtEvent);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public static Map<String, RtBoxDevice> getDevices() {
 		return ALL_DEVICES;
 	}
 	
-	public static BlinkDevice getDevices(String usn) {
+	public static RtBoxDevice getDevices(String usn) {
 		return ALL_DEVICES.get(usn);
 	}
 	
 	public static boolean selectDevice(String usn) {
 		if(ALL_DEVICES.containsKey(usn)) {
-			CONFIGURATION.setProperty("de.owlhq.selectedDevice", usn);
+			CONFIGURATION.setProperty("de.owlhq.selectedDeviceUsn", usn);
+			CONFIGURATION.setProperty("de.owlhq.selectedDevice", new Gson().toJson(ALL_DEVICES.get(usn)));
 			storeConfiguration();
 			return true;
 		}
 		return false;
 	}
 	
-	public static BlinkDevice getSelectedDevice() {
-		return ALL_DEVICES.get(CONFIGURATION.getProperty("de.owlhq.selectedDevice"));
+	public static RtBoxDevice getSelectedDevice() {
+		return SELECTED_DEVICE;
 	}
 	
 	public static AudioControl getSelectedDeviceAudioController() {
-		return AUDIO_CONTROLLER.get(CONFIGURATION.getProperty("de.owlhq.selectedDevice"));
+		return AUDIO_CONTROLLER.get(CONFIGURATION.getProperty("de.owlhq.selectedDeviceUsn"));
+	}
+	
+	public static RtBoxInfo getSelectedDeviceStatus() {
+		RtBoxInfo rt = null;
+		if (SELECTED_DEVICE.isReachable()) {
+			rt = SELECTED_DEVICE.getStatus();
+		}
+		return rt;
 	}
 	
 	public static List<String> getDeviceNames() {
-		return new LinkedList<String>(ALL_DEVICES.keySet());
+		List<String> ll = new LinkedList<String>();
+		if(SELECTED_DEVICE != null)
+			ll.add(SELECTED_DEVICE.getDeviceName());
+		ll.addAll(ALL_DEVICES.keySet());
+		return ll;
 	}
 	
-	public static boolean addDeviceNetworkListener(DeviceNetworkListener d) {
+	public static boolean addRtDeviceListener(RtDeviceListener d) {
 		return deviceListener.add(d);
 	}
 	
-	public static boolean removeDeviceNetworkListener(DeviceNetworkListener d) {
+	public static boolean removeRtDeviceListener(RtDeviceListener d) {
 		return deviceListener.remove(d);
 	}
 	
@@ -217,8 +337,6 @@ public class BlinkApp {
 	}
 	
 	public static int getConfigInt(String key) {
-		System.out.println(CONFIGURATION.getProperty(key));
-		System.out.println(key);
 		return Integer.valueOf(CONFIGURATION.getProperty(key));
 	}
 	
