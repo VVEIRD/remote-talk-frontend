@@ -68,6 +68,9 @@ public class RtBoxInfo {
 			newRandomPlayback = this.getAudio().getRandom_playback().getStatus();
 			newQueueLength = this.getAudio().getStatus().getQueue_count();
 		}
+		System.out.println("-------------------------------------------");
+		System.out.println("Old Random Playback: " + oldRandomPlayback);
+		System.out.println("New Random Playback: " + newRandomPlayback);
 		return oldCurrentlyPlaying == null && newCurrentlyPlaying != null 
 				|| oldCurrentlyPlaying != null && !oldCurrentlyPlaying.equals(newCurrentlyPlaying) 
 				|| !oldRandomPlayback.equals(newRandomPlayback) 
@@ -86,6 +89,14 @@ public class RtBoxInfo {
 			currentPlaybackState = this.getAudio().getStatus().getCurrently_playing() != null;
 		}
 		return oldPlaybackState && !currentPlaybackState;
+	}
+	
+	public boolean isPlayingAudio() {
+		return this.getAudio().getStatus() != null && this.getAudio().getStatus().getCurrently_playing() != null;
+	}
+	
+	public boolean isPlayingAnimation() {
+		return this.getLed() != null && this.getLed().getCurrentlyPlaying() != null && this.getLed().getCurrentlyPlaying().getBlink() != null;
 	}
 	
 	// ----------------------------------------------------------------------------------------------------------

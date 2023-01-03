@@ -138,7 +138,7 @@ public class BlinkApp {
 		selectedDeviceChangeDaemon = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				updateSelectedDeviceStatus();
+				updateSelectedDeviceStatus(false);
 			}
 		});
 		selectedDeviceChangeDaemon.setDaemon(true);
@@ -226,9 +226,6 @@ public class BlinkApp {
 			removedDevices.addAll(new LinkedList<>(NETWORK_DEVICES.keySet()));
 			removedDevices.removeAll(newDevices);
 			removedDevices.removeAll(existingDevices);
-			for (String device : removedDevices) {
-				NETWORK_DEVICES.remove(device);
-			}
 			// Updated Device Listener
 			for (String deviceName : newDevices) {
 				RtDeviceEvent e = new RtDeviceEvent(NETWORK_DEVICES.get(deviceName), RtDeviceEvent.DEVICE_CONNECTED);
@@ -237,6 +234,9 @@ public class BlinkApp {
 			for (String deviceName : removedDevices) {
 				RtDeviceEvent e = new RtDeviceEvent(NETWORK_DEVICES.get(deviceName), RtDeviceEvent.DEVICE_DISCONNECTED);
 				informDeviceListener(e);
+			}
+			for (String device : removedDevices) {
+				NETWORK_DEVICES.remove(device);
 			}
 			// Update ALL_DEVICES on change
 			if (newDevices.size() != 0 || removedDevices.size() != 0) {
@@ -265,12 +265,24 @@ public class BlinkApp {
 		}
 	}
 	
-	private static void updateSelectedDeviceStatus() {
-		RtBoxInfo lastKnownState = null;
-		if (SELECTED_DEVICE != null) {
+	public static void forceSelectedDeviceStatusUpdate() {
+		Thread d = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				updateSelectedDeviceStatus(true);
+			}
+		});
+		d.start();
+	}
+	
+	private static RtBoxInfo lastKnownState = null;
+	
+	private static void updateSelectedDeviceStatus(boolean runOnce) {
+		if (SELECTED_DEVICE != null && lastKnownState == null) {
 			lastKnownState = SELECTED_DEVICE.getStatus();
 		}
-		while (daemonRunning) {
+		do {
 			if (SELECTED_DEVICE != null) {
 				RtBoxInfo currentKnownState  = SELECTED_DEVICE.getStatus();
 				// Connect & Disconnect Events are handled by findDevices()
@@ -311,11 +323,12 @@ public class BlinkApp {
 				lastKnownState = null;
 			}
 			try {
-				Thread.sleep(getConfigInt("de.owlhq.daemon.change.sleep"));
+				if (!runOnce)
+					Thread.sleep(getConfigInt("de.owlhq.daemon.change.sleep"));
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-		}
+		} while (daemonRunning && !runOnce);
 		
 	}
 

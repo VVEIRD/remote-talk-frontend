@@ -17,6 +17,12 @@ import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.FormSpecs;
 import com.jgoodies.forms.layout.RowSpec;
 
+import de.owlhq.remotebox.BlinkApp;
+
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import java.awt.Font;
+
 public class AudioControlPanel extends JPanel {
 	private JLabel lblNextUp;
 	private JLabel lblCurrentyPlaying;
@@ -47,14 +53,32 @@ public class AudioControlPanel extends JPanel {
 		pnRandom.setLayout(null);
 		
 		JButton btnRandomStop = new JButton("STOP");
+		btnRandomStop.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				BlinkApp.getSelectedDevice().stopRandomAudio();
+				BlinkApp.forceSelectedDeviceStatusUpdate();
+			}
+		});
 		btnRandomStop.setBounds(10, 38, 80, 80);
 		pnRandom.add(btnRandomStop);
 		
 		JButton btnRandomEnable = new JButton("ENABLE");
+		btnRandomEnable.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				BlinkApp.getSelectedDevice().enableRandomAudio();
+				BlinkApp.forceSelectedDeviceStatusUpdate();
+			}
+		});
 		btnRandomEnable.setBounds(100, 38, 80, 80);
 		pnRandom.add(btnRandomEnable);
 		
 		JButton btnRandomDisable = new JButton("DISABLE");
+		btnRandomDisable.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				BlinkApp.getSelectedDevice().disableRandomAudio();
+				BlinkApp.forceSelectedDeviceStatusUpdate();
+			}
+		});
 		btnRandomDisable.setBounds(190, 38, 80, 80);
 		pnRandom.add(btnRandomDisable);
 		
@@ -63,7 +87,8 @@ public class AudioControlPanel extends JPanel {
 		pnRandom.add(lblNewLabel);
 		
 		lblRndPlaybackEnabled = new JLabel("Enabled");
-		lblRndPlaybackEnabled.setForeground(Color.GREEN);
+		lblRndPlaybackEnabled.setFont(new Font("Tahoma", Font.BOLD, 11));
+		lblRndPlaybackEnabled.setForeground(Color.GREEN.darker());
 		lblRndPlaybackEnabled.setHorizontalAlignment(SwingConstants.TRAILING);
 		lblRndPlaybackEnabled.setBounds(190, 13, 79, 14);
 		pnRandom.add(lblRndPlaybackEnabled);
@@ -109,9 +134,23 @@ public class AudioControlPanel extends JPanel {
 		panelAudio.add(lblAudioPlayback, "2, 2, 3, 1, fill, top");
 		
 		JButton btnStopCurrent_1 = new JButton("STOP");
+		btnStopCurrent_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(BlinkApp.getSelectedDevice() != null) {
+					BlinkApp.getSelectedDevice().stopAudioPlayback();
+					BlinkApp.forceSelectedDeviceStatusUpdate();
+				}
+			}
+		});
 		panelAudio.add(btnStopCurrent_1, "2, 4, fill, fill");
 		
 		JButton btnFlushQueue = new JButton("FLUSH Q");
+		btnFlushQueue.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				BlinkApp.getSelectedDevice().flushAudioQueue();
+				BlinkApp.forceSelectedDeviceStatusUpdate();
+			}
+		});
 		panelAudio.add(btnFlushQueue, "4, 4, fill, fill");
 		
 		JLabel lblNewLabel_2_2 = new JLabel("Currently Playing:");

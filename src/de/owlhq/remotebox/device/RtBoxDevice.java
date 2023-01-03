@@ -30,7 +30,7 @@ public class RtBoxDevice {
 	private String ip          = null;
 	private String serviceType = null;
 	
-	private RtBoxInfo lastStatus = null;
+	private transient RtBoxInfo lastStatus = null;
 	
 	public RtBoxDevice(Device ssdpDevice) {
 		this.deviceName = ssdpDevice.getUSN();
@@ -111,6 +111,19 @@ public class RtBoxDevice {
 		}
 		return json;
 	}
+
+	private boolean callSubroutine(String url, String expectedStatus) {
+		JsonObject json = this.callEndpoint(url, "GET");
+		if (json.get("status") != null && json.get("status").isJsonPrimitive()) {
+			try {
+				String status = json.get("status").getAsString();
+				return expectedStatus.equalsIgnoreCase(status);
+			} catch (ClassCastException e) {
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
 	
 	public RtBoxInfo getStatus() {
 		JsonObject json = this.callEndpoint(this.urlRoot, "GET");
@@ -163,16 +176,15 @@ public class RtBoxDevice {
 			RtBoxInfo rt = getStatus();
 			List<String> blinks = rt.getLed().getBlinkAsList();
 			if (blinks.contains(animationName)) {
-				JsonObject json = this.callEndpoint(this.urlRoot + "/led/play/" + animationName + "?endless=" + endless, "GET");
-				if (json.get("status") != null && json.get("status").isJsonPrimitive()) {
-					try {
-						String status = json.get("status").getAsString();
-						return status == "blink queued";
-					} catch (ClassCastException e) {
-						e.printStackTrace();
-					}
-				}
+				return this.callSubroutine(this.urlRoot + "/led/play/" + animationName + "?endless=" + endless, "blink queued");
 			}
+		}
+		return false;
+	}
+	
+	public boolean stopAnimationPlayback() {
+		if (isReachable()) {
+			return this.callSubroutine(this.urlRoot + "/led/stop", "stopping animation queued");
 		}
 		return false;
 	}
@@ -182,16 +194,43 @@ public class RtBoxDevice {
 			RtBoxInfo rt = getStatus();
 			List<String> audioFiles = rt.getAudio().getAudio_files();
 			if (audioFiles.contains(audioName)) {
-				JsonObject json = this.callEndpoint(this.urlRoot + "/audio/play/" + audioName, "GET");
-				if (json.get("status") != null && json.get("status").isJsonPrimitive()) {
-					try {
-						String status = json.get("status").getAsString();
-						return status == "Audio queued";
-					} catch (ClassCastException e) {
-						e.printStackTrace();
-					}
-				}
+				return this.callSubroutine(this.urlRoot + "/audio/play/" + audioName, "Audio queued");
 			}
+		}
+		return false;
+	}
+	
+	public boolean stopAudioPlayback() {
+		if (isReachable()) {
+			return this.callSubroutine(this.urlRoot + "/audio/stop", "Playback stopped");
+		}
+		return false;
+	}
+	
+	public boolean flushAudioQueue() {
+		if (isReachable()) {
+			return this.callSubroutine(this.urlRoot + "/audio/flush", "Queue flushed");
+		}
+		return false;
+	}
+	
+	public boolean disableRandomAudio() {
+		if (isReachable()) {
+			return this.callSubroutine(this.urlRoot + "/audio/random/disable", "Random playback disabled");
+		}
+		return false;
+	}
+	
+	public boolean enableRandomAudio() {
+		if (isReachable()) {
+			return this.callSubroutine(this.urlRoot + "/audio/random/enable", "Random playback enabled");
+		}
+		return false;
+	}
+	
+	public boolean stopRandomAudio() {
+		if (isReachable()) {
+			return this.callSubroutine(this.urlRoot + "/audio/random/stop", "Random playback enabled");
 		}
 		return false;
 	}

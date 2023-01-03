@@ -5,6 +5,7 @@ import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.ColumnSpec;
 import com.jgoodies.forms.layout.RowSpec;
 
+import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
 import de.owlhq.remotebox.animation.BlinkAnimator;
 
@@ -73,6 +74,12 @@ public class LedControlPanel extends JPanel {
 		add(btnNewButton, "2, 4, 3, 1");
 		
 		JButton btnNewButton_1 = new JButton("STOP");
+		btnNewButton_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				BlinkApp.getSelectedDevice().stopAnimationPlayback();
+				BlinkApp.forceSelectedDeviceStatusUpdate();
+			}
+		});
 		add(btnNewButton_1, "3, 6");
 		
 		JPanel panel = new JPanel();

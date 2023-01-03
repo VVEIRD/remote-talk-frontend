@@ -26,6 +26,8 @@ import javax.swing.JButton;
 import java.awt.event.ActionListener;
 import java.util.LinkedList;
 import java.awt.event.ActionEvent;
+import java.awt.Color;
+import java.awt.Font;
 
 public class MainFrame extends JFrame {
 
@@ -34,6 +36,7 @@ public class MainFrame extends JFrame {
 	private JButton btnAddCustomDevice;
 	private AudioControlPanel audioControlPanel;
 	private LedControlPanel ledControlPanel;
+	private JLabel lblDeviceReachable;
 
 	/**
 	 * Launch the application.
@@ -136,6 +139,11 @@ public class MainFrame extends JFrame {
 				RowSpec.decode("5px"),
 				RowSpec.decode("20px"),}));
 		
+		lblDeviceReachable = new JLabel("Device unreachable");
+		lblDeviceReachable.setFont(new Font("Tahoma", Font.BOLD, 11));
+		lblDeviceReachable.setForeground(Color.RED);
+		contentPane.add(lblDeviceReachable, "2, 2, 3, 1");
+		
 		JLabel lblNewLabel = new JLabel("Selected Device");
 		contentPane.add(lblNewLabel, "14, 2, 7, 1");
 		
@@ -195,35 +203,91 @@ public class MainFrame extends JFrame {
 				updateInfoDaemon(e);
 			}
 		});
+		// Populate Data with current state
+		if (BlinkApp.getSelectedDevice() != null) {
+			BlinkApp.getSelectedDevice().getStatus();
+			updateDeviceReachable(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.DEVICE_CONNECTED));
+			if (BlinkApp.getSelectedDevice().getLastStatus() != null && BlinkApp.getSelectedDevice().getLastStatus().isPlayingAnimation())
+				updateAnimation(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.ANIMATION_STARTED));
+			else
+				updateAnimation(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.ANIMATION_STOPPED));
+			if (BlinkApp.getSelectedDevice().getLastStatus() != null && BlinkApp.getSelectedDevice().getLastStatus().isPlayingAudio())
+				updateAudio(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.AUDIO_STARTED));
+			else
+				updateAudio(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.AUDIO_STOPPED));
+		}
 	}
 	
 	private void updateInfoDaemon(RtDeviceEvent e) {
 		updateAudio(e);
 		updateAnimation(e);
+		updateDeviceReachable(e);
+	}
+
+	private void updateDeviceReachable(RtDeviceEvent e) {
+		if(e.source != null) {
+			String lastState = lblDeviceReachable.getText();
+			EventQueue.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					lblDeviceReachable.setText(e.source.isReachable() ? "Device online" : "Device offline");
+					lblDeviceReachable.setForeground(e.source.isReachable() ? Color.GREEN.darker() : Color.RED);
+				}
+			});
+			// Populate Data with current state
+			if (e.source.isReachable() && lastState.equals("Device offline")) {
+				if (BlinkApp.getSelectedDevice().getLastStatus() != null && BlinkApp.getSelectedDevice().getLastStatus().isPlayingAnimation())
+					updateAnimation(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.ANIMATION_STARTED));
+				else
+					updateAnimation(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.ANIMATION_STOPPED));
+				if (BlinkApp.getSelectedDevice().getLastStatus() != null && BlinkApp.getSelectedDevice().getLastStatus().isPlayingAudio())
+					updateAudio(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.AUDIO_STARTED));
+				else
+					updateAudio(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.AUDIO_STOPPED));
+			}
+		}
+		else {
+			System.out.println("Taking device offline, source is null");
+			System.out.println("Event Type: " + e.eventType);
+			lblDeviceReachable.setText("Device offline");
+			lblDeviceReachable.setForeground(Color.RED);
+		}
 	}
 
 	private void updateAnimation(RtDeviceEvent e) {
-		if (e.eventType == RtDeviceEvent.ANIMATION_CHANGED) {
-			RtBoxDevice dev = e.source;
-			if (dev.isReachable() && e.source.getLastStatus() != null && e.source.getLastStatus().getLed() != null && e.source.getLastStatus().getLed().getCurrentlyPlaying() != null) {
-				String animationName = e.source.getLastStatus().getLed().getCurrentlyPlaying().getBlink();
-				boolean endless = e.source.getLastStatus().getLed().getCurrentlyPlaying().isEndless();
-				BlinkAnimation anim = BlinkApp.getAnimation(animationName);
-				// Fallback to device data if animation was not stored locally
-				if (anim == null) {
-					anim = dev.getAnimation(animationName);
+		if (e.source != null && (e.eventType == RtDeviceEvent.ANIMATION_CHANGED || (e.eventType == RtDeviceEvent.DEVICE_CONNECTED && e.source.isSelectedDevice())) ) {
+			EventQueue.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					RtBoxDevice dev = e.source;
+					if (dev.isReachable() && e.source.getLastStatus() != null && e.source.getLastStatus().getLed() != null && e.source.getLastStatus().getLed().getCurrentlyPlaying() != null) {
+						String animationName = e.source.getLastStatus().getLed().getCurrentlyPlaying().getBlink();
+						boolean endless = e.source.getLastStatus().getLed().getCurrentlyPlaying().isEndless();
+						BlinkAnimation anim = null;
+						if (!"stop".equals(animationName))
+							anim = BlinkApp.getAnimation(animationName);
+						// Fallback to device data if animation was not stored locally
+						if (anim == null && !"stop".equals(animationName)) {
+							anim = dev.getAnimation(animationName);
+						}
+						if (anim != null) {
+							ledControlPanel.playAnimation(anim, endless);
+							ledControlPanel.setAnimationName(animationName);
+							ledControlPanel.setAnimationEndless(endless);
+						}
+					}
 				}
-				if (anim != null) {
-					ledControlPanel.playAnimation(anim, endless);
-					ledControlPanel.setAnimationName(animationName);
-					ledControlPanel.setAnimationEndless(endless);
-				}
-			}
+			});
 		}
 		else if (e.eventType == RtDeviceEvent.ANIMATION_STOPPED) {
-			ledControlPanel.stopAnimation();
-			ledControlPanel.setAnimationName("NOTHING");
-			ledControlPanel.setAnimationEndless(false);
+			EventQueue.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					ledControlPanel.stopAnimation();
+					ledControlPanel.setAnimationName("NOTHING");
+					ledControlPanel.setAnimationEndless(false);
+				}
+			});
 		}
 	}
 
@@ -232,7 +296,7 @@ public class MainFrame extends JFrame {
 			EventQueue.invokeLater(new Runnable() {
 				@Override
 				public void run() {
-					if(e.source != null && e.source.getLastStatus() != null && e.source.getLastStatus().getAudio() != null && e.source.getLastStatus().getAudio().getStatus() != null) {
+					if(e.source != null && e.source.getLastStatus() != null && e.source.getLastStatus().isPlayingAudio()) {
 						audioControlPanel.updateCurrentlyPlaying(e.source.getLastStatus().getAudio().getStatus().getCurrently_playing());
 						audioControlPanel.updateQueue(e.source.getLastStatus().getAudio().getStatus().getQueue());
 						if(e.source.getLastStatus().getAudio().getRandom_playback() != null) {
@@ -244,6 +308,11 @@ public class MainFrame extends JFrame {
 					else {
 						audioControlPanel.updateCurrentlyPlaying("NOTHING");
 						audioControlPanel.updateQueue(new LinkedList<>());
+						if(e.source.getLastStatus() != null && e.source.getLastStatus().getAudio() != null && e.source.getLastStatus().getAudio().getRandom_playback() != null) {
+							audioControlPanel.updateRandomPlaybackEnabled("enabled".equals(e.source.getLastStatus().getAudio().getRandom_playback().getStatus()));
+							audioControlPanel.updateRandomPlaybackNextUp(e.source.getLastStatus().getAudio().getRandom_playback().getNext_up());
+							audioControlPanel.updateRandomPlaybackNextUpTime(e.source.getLastStatus().getAudio().getRandom_playback().getPlayed_at());
+						}
 					}
 				}
 			});
@@ -253,6 +322,11 @@ public class MainFrame extends JFrame {
 				@Override
 				public void run() {
 					audioControlPanel.updateCurrentlyPlaying("NOTHING");
+					if(e.source.getLastStatus() != null && e.source.getLastStatus().getAudio() != null && e.source.getLastStatus().getAudio().getRandom_playback() != null) {
+						audioControlPanel.updateRandomPlaybackEnabled("enabled".equals(e.source.getLastStatus().getAudio().getRandom_playback().getStatus()));
+						audioControlPanel.updateRandomPlaybackNextUp(e.source.getLastStatus().getAudio().getRandom_playback().getNext_up());
+						audioControlPanel.updateRandomPlaybackNextUpTime(e.source.getLastStatus().getAudio().getRandom_playback().getPlayed_at());
+					}
 				}
 			});
 		}

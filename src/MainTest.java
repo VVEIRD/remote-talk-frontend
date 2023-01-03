@@ -73,7 +73,6 @@ public class MainTest {
 		}
 	    System.out.println(BlinkApp.getConfig("ASDF"));;
 	    BlinkApp.showStartupDialog();
-	    new EffectCreatorDialog().setVisible(true);
 	    List<String> files = BlinkApp.getSelectedDeviceAudioController().getAudioFiles();
 	    for (String file : files) {
 			System.out.println("AudioFile: " + file);
