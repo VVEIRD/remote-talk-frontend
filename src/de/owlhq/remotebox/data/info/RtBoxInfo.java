@@ -68,9 +68,6 @@ public class RtBoxInfo {
 			newRandomPlayback = this.getAudio().getRandom_playback().getStatus();
 			newQueueLength = this.getAudio().getStatus().getQueue_count();
 		}
-		System.out.println("-------------------------------------------");
-		System.out.println("Old Random Playback: " + oldRandomPlayback);
-		System.out.println("New Random Playback: " + newRandomPlayback);
 		return oldCurrentlyPlaying == null && newCurrentlyPlaying != null 
 				|| oldCurrentlyPlaying != null && !oldCurrentlyPlaying.equals(newCurrentlyPlaying) 
 				|| !oldRandomPlayback.equals(newRandomPlayback) 
