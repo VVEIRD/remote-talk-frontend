@@ -14,6 +14,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.swing.JFrame;
 
@@ -25,9 +27,7 @@ import com.vmichalak.protocol.ssdp.Device;
 import com.vmichalak.protocol.ssdp.SSDPClient;
 
 import de.owlhq.remotebox.animation.BlinkAnimation;
-import de.owlhq.remotebox.audio.AudioControl;
 import de.owlhq.remotebox.data.PlayEffect;
-import de.owlhq.remotebox.data.info.AudioInfo;
 import de.owlhq.remotebox.data.info.RtBoxInfo;
 import de.owlhq.remotebox.device.RtBoxDevice;
 import de.owlhq.remotebox.events.RtDeviceEvent;
@@ -42,9 +42,9 @@ public class BlinkApp {
 	
 	private static Thread selectedDeviceChangeDaemon = null;
 	
-	private static boolean daemonRunning = true;
+	private static boolean DAEMON_RUNNING = true;
 	
-	private static String ssdpDeviceName = "remote-box-client";
+	private static String SSDP_DEVICE_NAME = "remote-box-client";
 
 	private static RtBoxDevice SELECTED_DEVICE = null;
 
@@ -53,13 +53,13 @@ public class BlinkApp {
 	private static Map<String, RtBoxDevice> NETWORK_DEVICES = null;
 	
 	private static Map<String, RtBoxDevice> CUSTOM_DEVICES = null;
-
-	private static Map<String, AudioControl> AUDIO_CONTROLLER = null;
 	
-	private static List<RtDeviceListener> deviceListener = new ArrayList<RtDeviceListener>(2);
+	private static List<RtDeviceListener> DEVICE_LISTENER = new ArrayList<RtDeviceListener>(2);
+	
+	private static List<PlayEffect> EFFECTS = new LinkedList<>();
 	
 	private static Properties CONFIGURATION = null;
-	private static JFrame CURRENT_WINDOW;
+	private static JFrame CURRENT_WINDOW = null;
 	
 	static {
 		init();
@@ -67,7 +67,6 @@ public class BlinkApp {
 
 	public static void init() {
 		ALL_DEVICES = new HashMap<>();
-		AUDIO_CONTROLLER = new HashMap<>();
 		NETWORK_DEVICES = new HashMap<>();
 		CUSTOM_DEVICES = new HashMap<>();
 		CONFIGURATION = new Properties();
@@ -78,11 +77,22 @@ public class BlinkApp {
 		} catch (FileNotFoundException e) {
 		} catch (IOException e) {
 		}
+		System.out.println("Keys");
+		for (Object key : CONFIGURATION.keySet()) {
+			System.out.println(key + ": " + CONFIGURATION.get(key));
+		}
+		EFFECTS = loadEffects();
 		// add coustom device count
+		boolean saveConfig = false;
 		if (!CONFIGURATION.containsKey("de.owlhq.customDevices")) {
 			CONFIGURATION.setProperty("de.owlhq.customDevices", "0");
 			CONFIGURATION.setProperty("de.owlhq.daemon.network.sleep", "5000");
 			CONFIGURATION.setProperty("de.owlhq.daemon.change.sleep", "2500");
+			saveConfig = true;
+		}
+		if(!CONFIGURATION.contains("de.owlhq.dataDir")) {
+			CONFIGURATION.setProperty("de.owlhq.dataDir", "data");
+			saveConfig = true;
 		}
 		for (int i=0;i<getConfigInt("de.owlhq.customDevices");i++) {
 			String deviceJson = getConfig("de.owlhq.customDevice."+i);
@@ -101,8 +111,10 @@ public class BlinkApp {
 		// add selected device and store configuration
 		if (!loaded && !CONFIGURATION.contains("de.owlhq.selectedDeviceUsn") || CONFIGURATION.getProperty("de.owlhq.selectedDeviceUsn").equals("")) {
 			CONFIGURATION.setProperty("de.owlhq.selectedDeviceUsn", ALL_DEVICES.keySet().isEmpty() ? "" : ALL_DEVICES.keySet().iterator().next());
-			storeConfiguration();
+			saveConfig = true;
 		}
+		if(saveConfig)
+			storeConfiguration();
 		// Set SELECTED_DEVICE
 		if (ALL_DEVICES.containsKey(getConfig("de.owlhq.selectedDeviceUsn"))) {
 			SELECTED_DEVICE  = ALL_DEVICES.get(getConfig("de.owlhq.selectedDeviceUsn"));
@@ -112,18 +124,17 @@ public class BlinkApp {
 		}
 		// Download all Blink Animations if device is available
 		if (SELECTED_DEVICE.isReachable()) {
-			List<String> animations = SELECTED_DEVICE.getBlinkAnimationList();
+			List<String> animations = SELECTED_DEVICE.getAnimationList();
 			for (String animation : animations) {
 				BlinkAnimation bA = SELECTED_DEVICE.getAnimation(animation);
 				saveAnimation(animation, bA);
 			}
 		}
-		AUDIO_CONTROLLER.put(SELECTED_DEVICE.getDeviceName(), new AudioControl(SELECTED_DEVICE));
 		findDevices();
 		deviceFinderDaemon = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				while(daemonRunning) {
+				while(DAEMON_RUNNING) {
 					findDevices();
 					try {
 						Thread.sleep(getConfigInt("de.owlhq.daemon.network.sleep"));
@@ -157,11 +168,41 @@ public class BlinkApp {
 			}
 		});
 	}
+	
+	private static List<PlayEffect> loadEffects() {
+		    return Stream.of(new File(getConfig("de.owlhq.dataDir") + File.separator + "effects").listFiles())
+		      .filter(file -> !file.isDirectory())
+		      .map(file -> loadEffect(file.getAbsolutePath()))
+		      .collect(Collectors.toList());
+	}
+	
+	private static PlayEffect loadEffect(String path) {
+		Gson g = new Gson();
+		try(FileReader fIn = new FileReader(path, StandardCharsets.UTF_8)) {
+			return g.fromJson(fIn, PlayEffect.class);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (JsonSyntaxException e) {
+			e.printStackTrace();
+		} catch (JsonIOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public static boolean uploadAnimation(String animation, BlinkAnimation bA) {
+		if(SELECTED_DEVICE != null && SELECTED_DEVICE.isReachable()) {
+			return SELECTED_DEVICE.putAnimation(animation, bA);
+		}
+		return false;
+	}
 
-	private static boolean saveAnimation(String animation, BlinkAnimation bA) {
+	public static boolean saveAnimation(String animation, BlinkAnimation bA) {
 		Gson g = new GsonBuilder().setPrettyPrinting().create();
 		String data = g.toJson(bA);
-		try (FileOutputStream fOut = new FileOutputStream("data" + File.separator + "blinks" + File.separator + animation + ".json")) {
+		try (FileOutputStream fOut = new FileOutputStream(getConfig("de.owlhq.dataDir") + File.separator + "blinks" + File.separator + animation + ".json")) {
 			fOut.write(data.getBytes(StandardCharsets.UTF_8));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -175,9 +216,30 @@ public class BlinkApp {
 		return true;
 	}
 
+	public static boolean saveEffect(PlayEffect effect) {
+		Gson g = new GsonBuilder().setPrettyPrinting().create();
+		String data = g.toJson(effect);
+		try (FileOutputStream fOut = new FileOutputStream(getConfig("de.owlhq.dataDir") + File.separator + "effects" + File.separator + effect.getName() + ".json")) {
+			fOut.write(data.getBytes(StandardCharsets.UTF_8));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	
+	public static List<PlayEffect> getEffects() {
+		return EFFECTS;
+	}
+
 	public static BlinkAnimation getAnimation(String animation) {
 		BlinkAnimation anim = null;
-		try (FileReader fIn = new FileReader("data" + File.separator + "blinks" + File.separator + animation + ".json", StandardCharsets.UTF_8)) {
+		try (FileReader fIn = new FileReader(getConfig("de.owlhq.dataDir") + File.separator + "blinks" + File.separator + animation + ".json", StandardCharsets.UTF_8)) {
 			anim = new Gson().fromJson(fIn, BlinkAnimation.class);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -209,7 +271,7 @@ public class BlinkApp {
 	
 	private static void findDevices() {
 		try {
-			List<Device> devices = SSDPClient.discover(1000, ssdpDeviceName);
+			List<Device> devices = SSDPClient.discover(1000, SSDP_DEVICE_NAME);
 			List<String> existingDevices = new LinkedList<>();
 			List<String> newDevices = new LinkedList<>();
 			List<String> removedDevices = new LinkedList<>();
@@ -244,15 +306,10 @@ public class BlinkApp {
 				new_all_devices.putAll(NETWORK_DEVICES);
 				new_all_devices.putAll(CUSTOM_DEVICES);
 				ALL_DEVICES = new_all_devices;
-				for (String usn : ALL_DEVICES.keySet()) {
-					AUDIO_CONTROLLER.clear();
-					AUDIO_CONTROLLER.put(usn, new AudioControl(ALL_DEVICES.get(usn)));
-				}
 				if (!ALL_DEVICES.containsKey(getConfig("de.owlhq.selectedDeviceUsn"))) {
 					System.out.println(getConfig("de.owlhq.selectedDeviceUsn"));
 					System.out.println("Selected Device not reachable");
 					SELECTED_DEVICE = new Gson().fromJson(getConfig("de.owlhq.selectedDevice"), RtBoxDevice.class);
-					AUDIO_CONTROLLER.put(SELECTED_DEVICE.getDeviceName(), new AudioControl(SELECTED_DEVICE));
 					//CONFIGURATION.setProperty("de.owlhq.selectedDeviceUsn", ALL_DEVICES.keySet().isEmpty() ? "" : ALL_DEVICES.keySet().iterator().next());
 					storeConfiguration();
 				}
@@ -328,12 +385,12 @@ public class BlinkApp {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-		} while (daemonRunning && !runOnce);
+		} while (DAEMON_RUNNING && !runOnce);
 		
 	}
 
 	private static void informDeviceListener(RtDeviceEvent rtEvent) {
-		for (RtDeviceListener deviceListener : deviceListener) {
+		for (RtDeviceListener deviceListener : DEVICE_LISTENER) {
 			try {
 				deviceListener.deviceChange(rtEvent);
 			} catch (Exception e) {
@@ -346,7 +403,7 @@ public class BlinkApp {
 		return ALL_DEVICES;
 	}
 	
-	public static RtBoxDevice getDevices(String usn) {
+	public static RtBoxDevice getDevice(String usn) {
 		return ALL_DEVICES.get(usn);
 	}
 	
@@ -358,7 +415,7 @@ public class BlinkApp {
 			storeConfiguration();
 			// Download all Blink Animations if device is available
 			if (SELECTED_DEVICE.isReachable()) {
-				List<String> animations = SELECTED_DEVICE.getBlinkAnimationList();
+				List<String> animations = SELECTED_DEVICE.getAnimationList();
 				for (String animation : animations) {
 					BlinkAnimation bA = SELECTED_DEVICE.getAnimation(animation);
 					saveAnimation(animation, bA);
@@ -371,10 +428,6 @@ public class BlinkApp {
 	
 	public static RtBoxDevice getSelectedDevice() {
 		return SELECTED_DEVICE;
-	}
-	
-	public static AudioControl getSelectedDeviceAudioController() {
-		return AUDIO_CONTROLLER.get(CONFIGURATION.getProperty("de.owlhq.selectedDeviceUsn"));
 	}
 	
 	public static RtBoxInfo getSelectedDeviceStatus() {
@@ -394,11 +447,11 @@ public class BlinkApp {
 	}
 	
 	public static boolean addRtDeviceListener(RtDeviceListener d) {
-		return deviceListener.add(d);
+		return DEVICE_LISTENER.add(d);
 	}
 	
 	public static boolean removeRtDeviceListener(RtDeviceListener d) {
-		return deviceListener.remove(d);
+		return DEVICE_LISTENER.remove(d);
 	}
 	
 	public static String getConfig(String key) {
@@ -441,8 +494,11 @@ public class BlinkApp {
 
 	public static PlayEffect editEffect(PlayEffect effect) {
 		
-		EffectCreatorDialog cDiag = new EffectCreatorDialog(CURRENT_WINDOW, effect, getSelectedDevice().getBlinkAnimationList(), getSelectedDevice().getAudioFiles());
+		EffectCreatorDialog cDiag = new EffectCreatorDialog(CURRENT_WINDOW, effect, getSelectedDevice().getAnimationList(), getSelectedDevice().getAudioFiles());
 		cDiag.setVisible(true);
+		if (!cDiag.isAborted())
+			saveEffect(cDiag.getEffect());
 		return !cDiag.isAborted() ? cDiag.getEffect() : effect;
 	}
+
 }

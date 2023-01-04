@@ -27,11 +27,6 @@ import de.owlhq.remotebox.gui.panel.LedPanel;
 
 public class MainTest {
 	public static void main(String[] args) throws JsonSyntaxException, JsonIOException, IOException {
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		BlinkAnimation ab = gson.fromJson(new FileReader("C:\\Users\\owl\\git\\remote-talk-box\\data\\blink\\2-lights-rotating-3-times.json"), BlinkAnimation.class);
-		System.out.println(gson.toJson(ab));
-		ab.generate();
-		System.out.println(gson.toJson(ab));
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (ClassNotFoundException e) {
@@ -73,17 +68,13 @@ public class MainTest {
 		}
 	    System.out.println(BlinkApp.getConfig("ASDF"));;
 	    BlinkApp.showStartupDialog();
-	    List<String> files = BlinkApp.getSelectedDeviceAudioController().getAudioFiles();
-	    for (String file : files) {
-			System.out.println("AudioFile: " + file);
-		}
 	    RtBoxInfo rtInfo = BlinkApp.getSelectedDeviceStatus();
 	    System.out.println("-------------------------------------------------------");
 	    System.out.println("Status:");
 	    System.out.println("-------------------------------------------------------");
 	    System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(rtInfo));
 	    System.out.println("-------------------------------------------------------");
-	    if (rtInfo.getLed().getCurrentlyPlaying() != null) {
+	    if (rtInfo != null && rtInfo.getLed().getCurrentlyPlaying() != null) {
 		    System.out.println("Currently Playing:");
 		    System.out.println("-------------------------------------------------------");
 		    System.out.println(rtInfo.getLed().getCurrentlyPlaying().getBlink());

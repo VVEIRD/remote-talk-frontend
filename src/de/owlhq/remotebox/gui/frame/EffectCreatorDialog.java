@@ -69,10 +69,10 @@ public class EffectCreatorDialog extends JDialog {
 	 * Create the frame.
 	 */
 	public EffectCreatorDialog(JFrame frame, PlayEffect effect, List<String> availableEffects, List<String> availableSounds) {
-		super(frame);
-		setTitle("Edit Effect");
+		super(frame, true);
+		setTitle(effect != null ? "Edit Effect" : "Create Effect");
 		// Data
-		this.effect = effect;
+		this.effect = effect != null ? effect : new PlayEffect();
 		this.availableEffects = availableEffects;
 		this.availableSounds = availableSounds;
 		// Frame Stuff
@@ -122,6 +122,7 @@ public class EffectCreatorDialog extends JDialog {
 		btnSave.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				EffectCreatorDialog.this.effect.setName(EffectCreatorDialog.this.tfName.getText());
+				// Add LED Animation
 				if (EffectCreatorDialog.this.chckbxPlayEffect.isSelected()) {
 					EffectCreatorDialog.this.effect.setBlinkAnimationName((String)EffectCreatorDialog.this.cbEffect.getSelectedItem());
 					EffectCreatorDialog.this.effect.setEndlessAnimation(EffectCreatorDialog.this.chckbxEndless.isSelected());
@@ -130,6 +131,7 @@ public class EffectCreatorDialog extends JDialog {
 					EffectCreatorDialog.this.effect.setBlinkAnimationName(null);
 					EffectCreatorDialog.this.effect.setEndlessAnimation(false);
 				}
+				// Add sound effect
 				if (EffectCreatorDialog.this.chckbxPlaySound.isSelected()) {
 					EffectCreatorDialog.this.effect.setAudioFile((String)EffectCreatorDialog.this.cbSound.getSelectedItem());
 				}
@@ -160,11 +162,17 @@ public class EffectCreatorDialog extends JDialog {
 		tfName.setBounds(10, 25, 195, 20);
 		contentPane.add(tfName);
 		tfName.setColumns(10);
+		tfName.setEditable(effect == null);
 		
 		JLabel lblNewLabel = new JLabel("Name");
 		lblNewLabel.setVerticalAlignment(SwingConstants.BOTTOM);
 		lblNewLabel.setBounds(10, 11, 195, 14);
 		contentPane.add(lblNewLabel);
+		chckbxPlayEffect.setSelected(this.effect.getAnimationName() != null);
+		chckbxPlaySound.setSelected(this.effect.getAudioFile() != null);
+		chckbxEndless.setSelected(this.effect.isEndlessAnimation());
+		cbEffect.setSelectedItem(this.effect.getAnimationName());
+		cbSound.setSelectedItem(this.effect.getAudioFile());
 	}
 	
 	public PlayEffect getEffect() {

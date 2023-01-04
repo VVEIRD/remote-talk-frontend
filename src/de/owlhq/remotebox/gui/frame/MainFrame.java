@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.awt.event.ActionEvent;
 import java.awt.Color;
 import java.awt.Font;
+import de.owlhq.remotebox.gui.panel.DashboardPanel;
 
 public class MainFrame extends JFrame {
 
@@ -37,6 +38,7 @@ public class MainFrame extends JFrame {
 	private AudioControlPanel audioControlPanel;
 	private LedControlPanel ledControlPanel;
 	private JLabel lblDeviceReachable;
+	private DashboardPanel dashboardPanel;
 
 	/**
 	 * Launch the application.
@@ -190,6 +192,9 @@ public class MainFrame extends JFrame {
 		
 		ledControlPanel = new LedControlPanel();
 		pnCommandCenter.add(ledControlPanel, BorderLayout.EAST);
+		
+		dashboardPanel = new DashboardPanel();
+		pnCommandCenter.add(dashboardPanel, BorderLayout.CENTER);
 		
 		AnimationDialog animationDialog = new AnimationDialog();
 		tabbedPane.addTab("Create Animation", null, animationDialog, null);

@@ -3,6 +3,7 @@ package de.owlhq.remotebox.device;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
@@ -21,6 +22,7 @@ import com.vmichalak.protocol.ssdp.Device;
 
 import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
+import de.owlhq.remotebox.data.PlayEffect;
 import de.owlhq.remotebox.data.info.RtBoxInfo;
 
 public class RtBoxDevice {
@@ -78,14 +80,22 @@ public class RtBoxDevice {
 	public RtBoxInfo getLastStatus() {
 		return lastStatus;
 	}
-	
-	public JsonObject callEndpoint(String urlString, String method) {
+		
+	public JsonObject callEndpoint(String urlString, String method, String content) {
 		String data = null;
 		JsonObject json = null;
 		try {
 			URL url = new URL(urlString);
 			HttpURLConnection con = (HttpURLConnection) url.openConnection();
-			con.setRequestMethod(method);
+			if("PUT".equals(method.toUpperCase())) {
+				con.setDoOutput(true);
+				con.setRequestMethod(method);
+				try(OutputStreamWriter out = new OutputStreamWriter(con.getOutputStream())) {
+					out.write(content);
+				}
+			}
+			else
+				con.setRequestMethod(method);
 			BufferedReader br = null;
 			if (100 <= con.getResponseCode() && con.getResponseCode() <= 399) {
 				br = new BufferedReader(new InputStreamReader(con.getInputStream()));
@@ -112,8 +122,8 @@ public class RtBoxDevice {
 		return json;
 	}
 
-	private boolean callSubroutine(String url, String expectedStatus) {
-		JsonObject json = this.callEndpoint(url, "GET");
+	private boolean callSubroutine(String url, String method, String expectedStatus, String content) {
+		JsonObject json = this.callEndpoint(url, method, content);
 		if (json.get("status") != null && json.get("status").isJsonPrimitive()) {
 			try {
 				String status = json.get("status").getAsString();
@@ -124,9 +134,13 @@ public class RtBoxDevice {
 		}
 		return false;
 	}
+
+	private boolean callSubroutine(String url, String expectedStatus) {
+		return callSubroutine(url, "GET", expectedStatus, null);
+	}
 	
 	public RtBoxInfo getStatus() {
-		JsonObject json = this.callEndpoint(this.urlRoot, "GET");
+		JsonObject json = this.callEndpoint(this.urlRoot, "GET", null);
 		RtBoxInfo rt = null;
 		if (json != null) {
 			try {
@@ -139,7 +153,7 @@ public class RtBoxDevice {
 		return rt;
 	}
 
-	public List<String> getBlinkAnimationList() {
+	public List<String> getAnimationList() {
 		RtBoxInfo rt = getStatus();
 		if (rt != null)
 			return rt.getLed().getBlinks();
@@ -158,7 +172,7 @@ public class RtBoxDevice {
 		if (isReachable()) {
 			List<String> blinks = rt.getLed().getBlinks();
 			if (blinks.contains(animationName)) {
-				JsonObject json = this.callEndpoint(this.urlRoot + "/blink/" + animationName, "GET");
+				JsonObject json = this.callEndpoint(this.urlRoot + "/blink/" + animationName, "GET", null);
 				if (json != null) {
 					try {
 						return new Gson().fromJson(json, BlinkAnimation.class);
@@ -169,6 +183,10 @@ public class RtBoxDevice {
 			}
 		}
 		return null;
+	}
+	
+	public boolean putAnimation(String animationName, BlinkAnimation animation) {
+		return callSubroutine(this.urlRoot + "/blink/" + animationName, "PUT", "blink saved", new Gson().toJson(animation));
 	}
 	
 	public boolean playAnimation(String animationName, boolean endless) {
@@ -238,6 +256,20 @@ public class RtBoxDevice {
 	public boolean isReachable() {
 		RtBoxInfo rt = getStatus();
 		return rt != null;
+	}
+
+	public boolean playEffect(PlayEffect effect) {
+		boolean successfullPlayed = true;
+		if (effect != null) {
+			if (effect.getAudioFile() != null)
+				successfullPlayed = successfullPlayed && this.playAudio(effect.getAudioFile());
+			if (effect.getAnimationName() != null)
+				successfullPlayed = successfullPlayed && this.playAnimation(effect.getAnimationName(), effect.isEndlessAnimation());
+		}
+		else {
+			successfullPlayed = false;
+		}
+		return successfullPlayed;
 	}
 	
 }

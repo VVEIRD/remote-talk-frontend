@@ -165,6 +165,13 @@ public class BlinkAnimation {
 		this.color_target = color_target;
 	}
 	
+	public Color getPrimaryTargetColor() {
+		if (this.color_target != null && this.color_target.length > 0) {
+			return Color.decode(this.color_target[0]);
+		}
+		return null;
+	}
+	
 	
 	public float[][][] generate() {
 		switch (this.type) {

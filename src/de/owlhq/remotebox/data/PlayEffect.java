@@ -13,14 +13,15 @@ public class PlayEffect {
 	public PlayEffect() {
 	}
 
-	public PlayEffect(String blinkAnimationName, boolean endlessAnimation, String audioFile) {
+	public PlayEffect(String name, String blinkAnimationName, boolean endlessAnimation, String audioFile) {
 		super();
+		this.name = name;
 		this.blinkAnimationName = blinkAnimationName;
 		this.endlessAnimation = endlessAnimation;
 		this.audioFile = audioFile;
 	}
 
-	public String getBlinkAnimationName() {
+	public String getAnimationName() {
 		return blinkAnimationName;
 	}
 

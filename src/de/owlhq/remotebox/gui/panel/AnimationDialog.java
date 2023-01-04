@@ -30,6 +30,7 @@ import com.jgoodies.forms.layout.RowSpec;
 import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
 import de.owlhq.remotebox.animation.BlinkAnimator;
+import de.owlhq.remotebox.device.RtBoxDevice;
 import de.owlhq.remotebox.animation.BlinkAnimation.BlinkTypes;
 import de.owlhq.remotebox.events.RtDeviceEvent;
 import de.owlhq.remotebox.events.RtDeviceListener;
@@ -571,31 +572,28 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 			}
 		});
 		tfSaveLocation = new JTextField();
+		tfSaveLocation.setEditable(false);
 		tfSaveLocation.setText("data\\blinks");
 		tfSaveLocation.setColumns(10);
-		panPreview.add(tfSaveLocation, "4, 32, 9, 1, fill, default");
-		
-		JButton btnNewLocation = new JButton("Location");
-		btnNewLocation.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				JFileChooser fileChooser = new JFileChooser();
-				fileChooser.setDialogTitle("Specify a location to save the animation to");    
-				fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-				int userSelection = fileChooser.showSaveDialog(AnimationDialog.this.getParent());
-				
-				if (userSelection == JFileChooser.APPROVE_OPTION) {
-				    File fileToSave = fileChooser.getSelectedFile();
-				    System.out.println("Save as file: " + fileToSave.getAbsolutePath());
-				    AnimationDialog.this.tfSaveLocation.setText(fileToSave.getAbsolutePath());
-				}
-			}
-		});
-		panPreview.add(btnNewLocation, "14, 32, 5, 1");
+		panPreview.add(tfSaveLocation, "4, 32, 15, 1, fill, default");
 		
 		JButton btnSave = new JButton("Save");
+		btnSave.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				BlinkApp.saveAnimation(tfSaveName.getText(), getAnimation());
+			}
+		});
 		panPreview.add(btnSave, "6, 36, 11, 1");
 		
 		btnUpload = new JButton("Upload");
+		btnUpload.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				RtBoxDevice device = BlinkApp.getDevice((String)cbRemoteBox.getSelectedItem());
+				if(device != null && device.isReachable()) {
+					device.putAnimation(tfSaveName.getText(), getAnimation());
+				}
+			}
+		});
 		btnUpload.setEnabled(false);
 		panPreview.add(btnUpload, "32, 36, 13, 1");
 		panPreview.add(btnSaveBack, "38, 46, 5, 1");
@@ -1152,7 +1150,6 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 	}
 	
 	public BlinkAnimation getAnimation() {
-		// TODO: Implement
 		BlinkAnimation ba = new BlinkAnimation(this.getValueType(), this.getValueDuration(), this.getValueLoops(), this.getValueFps(),
 				this.getValueBrightness(), this.getValueDecay(), 8, this.getValueColorSource(), this.getValueColorTarget());
 		ba.setFilter_frames(getValueFilterFrames());
