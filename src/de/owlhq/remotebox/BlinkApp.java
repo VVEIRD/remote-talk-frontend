@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.swing.JFrame;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -37,6 +39,8 @@ import de.owlhq.remotebox.events.RtDeviceListener;
 import de.owlhq.remotebox.gui.frame.EffectCreatorDialog;
 import de.owlhq.remotebox.gui.frame.MainFrame;
 import de.owlhq.remotebox.gui.frame.StartupFrame;
+import de.owlhq.remotebox.gui.panel.LedInterface;
+import de.owlhq.remotebox.gui.panel.LedPanel;
 
 public class BlinkApp {
 
@@ -544,6 +548,50 @@ public class BlinkApp {
 
 	public static boolean debug() {
 		return "true".equalsIgnoreCase(getConfig("de.owlhq.debug"));
+	}
+	
+	public static void main(String[] args) throws JsonSyntaxException, JsonIOException, IOException {
+		try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedLookAndFeelException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		List<Device> devices = SSDPClient.discover(1000, "remote-box-client");
+	    System.out.println(devices.size() + " devices found");
+	    for (Device device : devices) {
+	    	System.out.println("== DEVICE : ==");
+			System.out.println(" USN:         " + device.getUSN());
+			System.out.println(" IP:          " + device.getIPAddress());
+			System.out.println(" Server:      " + device.getServer());
+			System.out.println(" ServiceType: " + device.getServiceType());
+			System.out.println(" URL:         " + device.getDescriptionUrl());
+		}
+	    BlinkApp.showStartupDialog();
+	    RtBoxInfo rtInfo = BlinkApp.getSelectedDeviceStatus();
+	    System.out.println("-------------------------------------------------------");
+	    System.out.println("Status:");
+	    System.out.println("-------------------------------------------------------");
+	    System.out.println(new GsonBuilder().setPrettyPrinting().create().toJson(rtInfo));
+	    System.out.println("-------------------------------------------------------");
+	    if (rtInfo != null && rtInfo.getLed().getCurrentlyPlaying() != null) {
+		    System.out.println("Currently Playing:");
+		    System.out.println("-------------------------------------------------------");
+		    System.out.println(rtInfo.getLed().getCurrentlyPlaying().getBlink());
+		    if (rtInfo.getLed().getCurrentlyPlaying().isEndless()) 
+			    System.out.println("Endlessly");
+		    System.out.println("-------------------------------------------------------");
+		    System.out.println(BlinkApp.getSelectedDevice().getAnimation(rtInfo.getLed().getCurrentlyPlaying().getBlink()));
+	    }
 	}
 
 }
