@@ -1,5 +1,6 @@
 package de.owlhq.remotebox.device;
 
+import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -108,8 +109,11 @@ public class RtBoxDevice {
 			buff = Arrays.copyOf(buff, read);
 			data = new String(buff);
 		} catch (MalformedURLException e) {
+			e.printStackTrace();
 		} catch (ProtocolException e) {
+			e.printStackTrace();
 		} catch (IOException e) {
+			e.printStackTrace();
 		}
 		if (data != null) {
 			JsonParser parser = new JsonParser();
@@ -146,8 +150,12 @@ public class RtBoxDevice {
 			try {
 				rt = new Gson().fromJson(json, RtBoxInfo.class);
 			} catch (JsonSyntaxException e) {
+				BlinkApp.setStatusText("Could get status update from device", Color.RED.darker());
 				e.printStackTrace();
 			}
+		}
+		else {
+			BlinkApp.setStatusText("Could get status update from device", Color.RED.darker());
 		}
 		this.lastStatus = rt;
 		return rt;
@@ -157,6 +165,7 @@ public class RtBoxDevice {
 		RtBoxInfo rt = getStatus();
 		if (rt != null)
 			return rt.getLed().getBlinks();
+		BlinkApp.setStatusText("Could not get animations", Color.RED.darker());
 		return new LinkedList<>();
 	}
 
@@ -164,6 +173,7 @@ public class RtBoxDevice {
 		RtBoxInfo rt = getStatus();
 		if (rt != null)
 			return rt.getAudio().getAudio_files();
+		BlinkApp.setStatusText("Could not get sound clip names", Color.RED.darker());
 		return new LinkedList<>();
 	}
 	
@@ -182,11 +192,17 @@ public class RtBoxDevice {
 				}
 			}
 		}
+		BlinkApp.setStatusText("Could not get animation" + animationName, Color.RED.darker());
 		return null;
 	}
 	
 	public boolean putAnimation(String animationName, BlinkAnimation animation) {
-		return callSubroutine(this.urlRoot + "/blink/" + animationName, "PUT", "blink saved", new Gson().toJson(animation));
+		boolean success = callSubroutine(this.urlRoot + "/blink/" + animationName, "PUT", "blink saved", new Gson().toJson(animation));
+		if (success)
+			BlinkApp.setStatusText("Uploaded animation " + animationName, Color.GREEN.darker());
+		else
+			BlinkApp.setStatusText("Could not upload animation" + animationName, Color.RED.darker());
+		return success;
 	}
 	
 	public boolean playAnimation(String animationName, boolean endless) {
@@ -194,7 +210,12 @@ public class RtBoxDevice {
 			RtBoxInfo rt = getStatus();
 			List<String> blinks = rt.getLed().getBlinkAsList();
 			if (blinks.contains(animationName)) {
-				return this.callSubroutine(this.urlRoot + "/led/play/" + animationName + "?endless=" + endless, "blink queued");
+				boolean success = this.callSubroutine(this.urlRoot + "/led/play/" + animationName + "?endless=" + endless, "blink queued");
+				if (success)
+					BlinkApp.setStatusText("Playing animation " + animationName + (endless ? " endlessly" : ""), Color.GREEN.darker());
+				else
+					BlinkApp.setStatusText("Could not play animation" + animationName, Color.RED.darker());
+				return success;
 			}
 		}
 		return false;
@@ -202,7 +223,12 @@ public class RtBoxDevice {
 	
 	public boolean stopAnimationPlayback() {
 		if (isReachable()) {
-			return this.callSubroutine(this.urlRoot + "/led/stop", "stopping animation queued");
+			boolean success = this.callSubroutine(this.urlRoot + "/led/stop", "stopping animation queued");
+			if (success)
+				BlinkApp.setStatusText("Animation stopped", Color.GREEN.darker());
+			else
+				BlinkApp.setStatusText("Could not stop animation", Color.RED.darker());
+			return success;
 		}
 		return false;
 	}
@@ -212,7 +238,12 @@ public class RtBoxDevice {
 			RtBoxInfo rt = getStatus();
 			List<String> audioFiles = rt.getAudio().getAudio_files();
 			if (audioFiles.contains(audioName)) {
-				return this.callSubroutine(this.urlRoot + "/audio/play/" + audioName, "Audio queued");
+				boolean success = this.callSubroutine(this.urlRoot + "/audio/play/" + audioName, "Audio queued");
+				if (success)
+					BlinkApp.setStatusText("sound " + audioName + " queued", Color.GREEN.darker());
+				else
+					BlinkApp.setStatusText("Could not queue sound " + audioName, Color.RED.darker());
+				return success;
 			}
 		}
 		return false;
@@ -220,35 +251,61 @@ public class RtBoxDevice {
 	
 	public boolean stopAudioPlayback() {
 		if (isReachable()) {
-			return this.callSubroutine(this.urlRoot + "/audio/stop", "Playback stopped");
+			boolean success = this.callSubroutine(this.urlRoot + "/audio/stop", "Playback stopped");
+			if (success)
+				BlinkApp.setStatusText("Audio playback stopped", Color.GREEN.darker());
+			else
+				BlinkApp.setStatusText("Could not stop audio playback", Color.RED.darker());
+			return success;
 		}
 		return false;
 	}
 	
 	public boolean flushAudioQueue() {
 		if (isReachable()) {
-			return this.callSubroutine(this.urlRoot + "/audio/flush", "Queue flushed");
+			boolean success = this.callSubroutine(this.urlRoot + "/audio/flush", "Queue flushed");
+			if (success)
+				BlinkApp.setStatusText("Queue flushed", Color.GREEN.darker());
+			else
+				BlinkApp.setStatusText("Could not flush queue", Color.RED.darker());
+			return success;
 		}
 		return false;
 	}
 	
 	public boolean disableRandomAudio() {
 		if (isReachable()) {
-			return this.callSubroutine(this.urlRoot + "/audio/random/disable", "Random playback disabled");
+			boolean success = this.callSubroutine(this.urlRoot + "/audio/random/disable", "Random playback disabled");
+			if (success)
+				BlinkApp.setStatusText("Random audio disabled", Color.GREEN.darker());
+			else
+				BlinkApp.setStatusText("Could not disable random audio", Color.RED.darker());
+			return success;
 		}
 		return false;
 	}
 	
 	public boolean enableRandomAudio() {
 		if (isReachable()) {
-			return this.callSubroutine(this.urlRoot + "/audio/random/enable", "Random playback enabled");
+			boolean success = this.callSubroutine(this.urlRoot + "/audio/random/enable", "Random playback enabled");
+			if (success)
+				BlinkApp.setStatusText("Random audio enabled", Color.GREEN.darker());
+			else
+				BlinkApp.setStatusText("Could not enable random audio", Color.RED.darker());
+			return success;
 		}
 		return false;
 	}
 	
 	public boolean stopRandomAudio() {
 		if (isReachable()) {
-			return this.callSubroutine(this.urlRoot + "/audio/random/stop", "Random playback enabled");
+			boolean success = this.callSubroutine(this.urlRoot + "/audio/random/stop", "Random playback enabled");
+			if (success)
+				BlinkApp.setStatusText("Random audio stopped", Color.GREEN.darker());
+			else
+				BlinkApp.setStatusText("Could not stop random audio", Color.RED.darker());
+			return success;
+				
 		}
 		return false;
 	}
@@ -269,6 +326,10 @@ public class RtBoxDevice {
 		else {
 			successfullPlayed = false;
 		}
+		if (successfullPlayed) 
+			BlinkApp.setStatusText(effect.getName() + " played", Color.GREEN.darker());
+		else
+			BlinkApp.setStatusText(effect.getName() + " not played", Color.RED.darker());
 		return successfullPlayed;
 	}
 	

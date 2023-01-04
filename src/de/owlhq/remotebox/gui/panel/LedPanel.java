@@ -230,6 +230,17 @@ public class LedPanel extends JPanel implements ActionListener, LedInterface {
 			return Color.black;
 		}
 	}
+
+	public void reset(Color color) {
+		setColor(0, color);
+		setColor(1, color);
+		setColor(2, color);
+		setColor(3, color);
+		setColor(4, color);
+		setColor(5, color);
+		setColor(6, color);
+		setColor(7, color);
+	}
 	
 	@Override
 	public int getSelectedButton() {

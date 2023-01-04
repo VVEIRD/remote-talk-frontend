@@ -31,7 +31,6 @@ import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
 import de.owlhq.remotebox.animation.BlinkAnimator;
 import de.owlhq.remotebox.device.RtBoxDevice;
-import de.owlhq.remotebox.animation.BlinkAnimation.BlinkTypes;
 import de.owlhq.remotebox.events.RtDeviceEvent;
 import de.owlhq.remotebox.events.RtDeviceListener;
 
@@ -53,7 +52,7 @@ import java.awt.Font;
 import javax.swing.JCheckBox;
 
 public class AnimationDialog extends JPanel implements ActionListener, ChangeListener {
-	private JComboBox<BlinkTypes> valueType;
+	private JComboBox<String> valueType;
 	private JSpinner valueDuration;
 	private JSpinner valueBrightness;
 	private JSpinner valueFps;
@@ -287,15 +286,15 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
         JButton btnStartAnimation = new JButton("Start/Stop");
         btnStartAnimation.addActionListener(new ActionListener() {
         	public void actionPerformed(ActionEvent e) {
+				BlinkAnimation ba = AnimationDialog.this.getAnimation();
         		if (blinkFilterFrameAnimator == null) {
-					BlinkAnimation ba = AnimationDialog.this.getAnimation();
 					AnimationDialog.this.blinkFilterFrameAnimator = new BlinkAnimator(ba, AnimationDialog.this.filterFrameLedPanel, AnimationDialog.this.lblFilterFramesFPS, true);
 				}
         		if (AnimationDialog.this.blinkFilterFrameAnimator.isDaemonRunning()) {
         			AnimationDialog.this.blinkFilterFrameAnimator.stopAnimation();
         		}
         		else {
-        			AnimationDialog.this.blinkFilterFrameAnimator.reset();
+        			AnimationDialog.this.blinkFilterFrameAnimator.setBa(ba);
         			AnimationDialog.this.blinkFilterFrameAnimator.startAnimation();
         		}
         	}
@@ -508,7 +507,8 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 					AnimationDialog.this.blinkPreviewAnimator.stopAnimation();
 					AnimationDialog.this.blinkPreviewAnimator = null;
 				}
-				AnimationDialog.this.tabbedPane.setSelectedIndex(AnimationDialog.this.tabbedPane.getSelectedIndex()+1);
+				AnimationDialog.this.reset();
+				AnimationDialog.this.tabbedPane.setSelectedIndex(0);
 			}
 		});
 
@@ -1085,7 +1085,7 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 		JLabel lblGeneralLoops = new JLabel("Loops");
 		panGeneral.add(lblGeneralLoops, "2, 12, 7, 1");
 		
-		BlinkTypes[] types = BlinkTypes.values();
+		String[] types = {"PULSE", "MORPH", "DECAY"};
 		valueType = new JComboBox(types);
 		panGeneral.add(valueType, "10, 2, 11, 1, fill, default");
 		
@@ -1145,8 +1145,17 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 	public int getValueDuration() {
 		return (Integer) valueDuration.getValue();
 	}
-	public BlinkTypes getValueType() {
-		return (BlinkTypes) valueType.getSelectedItem();
+	public int getValueType() {
+		switch((String)valueType.getSelectedItem()) {
+			case "PULSE":
+				return 1;
+			case "MORPH":
+				return 2;
+			case "DECAY":
+				return 2;
+			default:
+				return 1;
+		}
 	}
 	
 	public BlinkAnimation getAnimation() {
@@ -1154,6 +1163,29 @@ public class AnimationDialog extends JPanel implements ActionListener, ChangeLis
 				this.getValueBrightness(), this.getValueDecay(), 8, this.getValueColorSource(), this.getValueColorTarget());
 		ba.setFilter_frames(getValueFilterFrames());
 		return ba;
+	}
+	
+	public void reset() {
+		valueType.setSelectedIndex(0);
+		valueDuration.setValue(1500);
+		valueLoops.setValue(1);
+		valueFps.setValue(30);
+		valueBrightness.setValue(90);
+		valueDecay.setValue(25);
+		valueSourceColorLed.reset(Color.BLACK);
+		valueTargetColorLed.reset(Color.RED);
+
+        
+        filterFrameTableModel.setRowCount(1);
+        filterFrameTableModel.setValueAt(0, 0, 0);
+        filterFrameTableModel.setValueAt(true, 0, 1);
+        filterFrameTableModel.setValueAt(true, 0, 2);
+        filterFrameTableModel.setValueAt(true, 0, 3);
+        filterFrameTableModel.setValueAt(true, 0, 4);
+        filterFrameTableModel.setValueAt(true, 0, 5);
+        filterFrameTableModel.setValueAt(true, 0, 6);
+        filterFrameTableModel.setValueAt(true, 0, 7);
+        filterFrameTableModel.setValueAt(true, 0, 8);
 	}
 
 	private String[] getValueColorTarget() {

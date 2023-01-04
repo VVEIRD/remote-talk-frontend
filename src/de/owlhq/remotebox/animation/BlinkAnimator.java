@@ -92,6 +92,11 @@ public class BlinkAnimator implements Runnable {
 			this.filterFrameNo += this.frameAdvance;
 		return ff;
 	}
+	
+	public void setBa(BlinkAnimation ba) {
+		this.ba = ba;
+		this.reset();
+	}
 
 	@Override
 	public void run() {

@@ -1,5 +1,5 @@
 {
-  "type": "1",
+  "type": 1,
   "duration_ms": 3000,
   "loop": 4,
   "FPS": 30,

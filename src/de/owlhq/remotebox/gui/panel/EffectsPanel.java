@@ -17,6 +17,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.Font;
 
 public class EffectsPanel extends JPanel {
 	
@@ -88,6 +89,7 @@ public class EffectsPanel extends JPanel {
 		add(btnPlay);
 		
 		lblName = new JLabel(this.effect.getName());
+		lblName.setFont(new Font("Tahoma", Font.BOLD, 11));
 		lblName.setHorizontalAlignment(SwingConstants.CENTER);
 		lblName.setBounds(0, 0, 120, 20);
 		add(lblName);

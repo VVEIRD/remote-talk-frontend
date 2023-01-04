@@ -337,4 +337,8 @@ public class MainFrame extends JFrame {
 		}
 	}
 
+	public void setStatusText(String text, Color c) {
+		this.dashboardPanel.setStatusText(text, c);
+	}
+
 }

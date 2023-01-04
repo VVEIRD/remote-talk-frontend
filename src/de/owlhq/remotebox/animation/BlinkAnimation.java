@@ -11,28 +11,12 @@ import com.google.gson.annotations.SerializedName;
 
 public class BlinkAnimation {
 
-	public static enum BlinkTypes {
-		
-		@SerializedName("1")
-		PULSE(1), 
-		@SerializedName("2")
-		MORPH(2),
-		@SerializedName("3")
-		DECAY(3);
 
-		private final int value;
-
-		BlinkTypes(final int newValue) {
-			value = newValue;
-		}
-
-		public int getValue() {
-			return value;
-		}
+	public static final int PULSE = 1;
+	public static final int MORPH = 2;
+	public static final int DECAY = 3;
 	
-	}
-
-	private BlinkTypes type = BlinkTypes.PULSE;
+	private int type = PULSE;
 	
 	private int duration_ms = 1000;
 	
@@ -55,7 +39,7 @@ public class BlinkAnimation {
 	public BlinkAnimation() {
 	}
 
-	public BlinkAnimation(BlinkTypes type, int duration_ms, int loop, int fPS, float brightnes, float decay, int led_count, String[] color_source, String[] color_target) {
+	public BlinkAnimation(int type, int duration_ms, int loop, int fPS, float brightnes, float decay, int led_count, String[] color_source, String[] color_target) {
 		super();
 		this.type = type;
 		this.duration_ms = duration_ms;
@@ -68,7 +52,7 @@ public class BlinkAnimation {
 		this.decay = decay;
 	}
 
-	public BlinkAnimation(BlinkTypes type, int duration_ms, int loop, int fPS, float brightnes, float decay, int led_count,
+	public BlinkAnimation(int type, int duration_ms, int loop, int fPS, float brightnes, float decay, int led_count,
 			int[][] filter_frames, String[] color_source, String[] color_target) {
 		super();
 		this.type = type;
@@ -83,11 +67,11 @@ public class BlinkAnimation {
 		this.decay = decay;
 	}
 
-	public BlinkTypes getType() {
+	public int getType() {
 		return type;
 	}
 
-	public void setType(BlinkTypes type) {
+	public void setType(int type) {
 		this.type = type;
 	}
 

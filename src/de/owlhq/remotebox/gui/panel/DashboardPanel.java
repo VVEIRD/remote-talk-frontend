@@ -19,6 +19,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.Color;
 import java.awt.FlowLayout;
+import java.awt.Font;
 
 public class DashboardPanel extends JPanel {
 	private JLabel lblStatus;
@@ -113,6 +114,7 @@ public class DashboardPanel extends JPanel {
 		pnEffects.setLayout(wLayout);
 		
 		lblStatus = new JLabel("");
+		lblStatus.setFont(new Font("Tahoma", Font.BOLD, 11));
 		add(lblStatus, "1, 32, 30, 1");
 		
 		btnAddEffect = new JButton("+");
@@ -141,6 +143,7 @@ public class DashboardPanel extends JPanel {
 	public void addEffect(PlayEffect eff) {
 		EffectsPanel eP = new EffectsPanel(eff);
 		pnEffects.add(eP);
+		pnEffects.revalidate();
 	}
 	
 	public void setStatusText(String text, Color color) {

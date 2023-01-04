@@ -1,5 +1,6 @@
 package de.owlhq.remotebox;
 
+import java.awt.Color;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -493,12 +494,18 @@ public class BlinkApp {
 	}
 
 	public static PlayEffect editEffect(PlayEffect effect) {
-		
 		EffectCreatorDialog cDiag = new EffectCreatorDialog(CURRENT_WINDOW, effect, getSelectedDevice().getAnimationList(), getSelectedDevice().getAudioFiles());
 		cDiag.setVisible(true);
 		if (!cDiag.isAborted())
 			saveEffect(cDiag.getEffect());
 		return !cDiag.isAborted() ? cDiag.getEffect() : effect;
+	}
+	
+	public static void setStatusText(String text, Color c) {
+		System.out.println("Status: " + text);
+		if (CURRENT_WINDOW !=null && CURRENT_WINDOW instanceof MainFrame) {
+			((MainFrame)CURRENT_WINDOW).setStatusText(text, c);
+		}
 	}
 
 }
