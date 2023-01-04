@@ -74,6 +74,21 @@ public class RtBoxInfo {
 				|| oldQueueLength != newQueueLength;
 	}
 	
+	public boolean hasRandomAudioChanged(RtBoxInfo oldInfo) {
+
+		String oldRandomPlayback = "";
+		String newRandomPlayback = "";
+		// Determine old state
+		if (oldInfo != null && oldInfo.getAudio() != null && oldInfo.getAudio().getStatus() != null) {
+			oldRandomPlayback = oldInfo.getAudio().getRandom_playback().getStatus();
+		}
+		// Determine current state
+		if (this.getAudio() != null && this.getAudio().getStatus() != null) {
+			newRandomPlayback = this.getAudio().getRandom_playback().getStatus();
+		}
+		return !oldRandomPlayback.equals(newRandomPlayback) ;
+	}
+	
 	public boolean hasAudioStopped(RtBoxInfo oldInfo) {
 		boolean oldPlaybackState = false;
 		boolean currentPlaybackState = false;
@@ -95,6 +110,10 @@ public class RtBoxInfo {
 	public boolean isPlayingAnimation() {
 		return this.getLed() != null && this.getLed().getCurrentlyPlaying() != null && this.getLed().getCurrentlyPlaying().getBlink() != null;
 	}
+
+	public boolean isVoiceConnected() {
+		return this.getVoice() != null && "connected".equalsIgnoreCase(this.getVoice().getStatus());
+	}
 	
 	// ----------------------------------------------------------------------------------------------------------
 	// -- VOICE Helper Functions
@@ -105,11 +124,11 @@ public class RtBoxInfo {
 		boolean currentVoiceState = false;
 		// Determine old state
 		if (oldInfo != null && oldInfo.getVoice() != null) {
-			oldVoiceState = oldInfo.getVoice().getStatus() == "connected";
+			oldVoiceState = "connected".equals(oldInfo.getVoice().getStatus());
 		}
 		// Determine current state
 		if (this.getVoice() != null) {
-			currentVoiceState = this.getVoice().getStatus() == "connected";
+			currentVoiceState = "connected".equals(this.getVoice().getStatus());
 		}
 		return !oldVoiceState && currentVoiceState;
 	}

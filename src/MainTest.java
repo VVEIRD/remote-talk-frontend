@@ -66,7 +66,6 @@ public class MainTest {
 			System.out.println(" ServiceType: " + device.getServiceType());
 			System.out.println(" URL:         " + device.getDescriptionUrl());
 		}
-	    System.out.println(BlinkApp.getConfig("ASDF"));;
 	    BlinkApp.showStartupDialog();
 	    RtBoxInfo rtInfo = BlinkApp.getSelectedDeviceStatus();
 	    System.out.println("-------------------------------------------------------");

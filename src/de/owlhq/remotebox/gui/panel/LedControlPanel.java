@@ -37,6 +37,8 @@ public class LedControlPanel extends JPanel {
 				ColumnSpec.decode("5px"),},
 			new RowSpec[] {
 				RowSpec.decode("5px"),
+				RowSpec.decode("25px"),
+				RowSpec.decode("5px"),
 				RowSpec.decode("120px"),
 				RowSpec.decode("5px"),
 				RowSpec.decode("fill:25px"),
@@ -48,8 +50,21 @@ public class LedControlPanel extends JPanel {
 				RowSpec.decode("80px"),
 				RowSpec.decode("5px:grow"),}));
 		
+		JLabel lblNewLabel_1 = new JLabel("LED");
+		lblNewLabel_1.setFont(new Font("Tahoma", Font.BOLD | Font.ITALIC, 13));
+		lblNewLabel_1.setHorizontalAlignment(SwingConstants.CENTER);
+		add(lblNewLabel_1, "2, 2, 3, 1");
+		
 		ledPreviewPanel = new LedPreviewPanel();
-		add(ledPreviewPanel, "2, 2, 3, 1, fill, fill");
+		add(ledPreviewPanel, "2, 4, 3, 1, fill, fill");
+		
+		JButton btnNewButton_1 = new JButton("STOP");
+		btnNewButton_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				BlinkApp.getSelectedDevice().stopAnimationPlayback();
+				BlinkApp.forceSelectedDeviceStatusUpdate();
+			}
+		});
 		
 		JButton btnNewButton = new JButton("Disable Preview");
 		btnNewButton.addActionListener(new ActionListener() {
@@ -71,19 +86,11 @@ public class LedControlPanel extends JPanel {
 				}
 			}
 		});
-		add(btnNewButton, "2, 4, 3, 1");
-		
-		JButton btnNewButton_1 = new JButton("STOP");
-		btnNewButton_1.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				BlinkApp.getSelectedDevice().stopAnimationPlayback();
-				BlinkApp.forceSelectedDeviceStatusUpdate();
-			}
-		});
-		add(btnNewButton_1, "3, 6");
+		add(btnNewButton, "2, 6, 3, 1");
+		add(btnNewButton_1, "3, 8");
 		
 		JPanel panel = new JPanel();
-		add(panel, "2, 8, 3, 3, fill, fill");
+		add(panel, "2, 10, 3, 3, fill, fill");
 		panel.setLayout(null);
 		
 		JLabel lblNewLabel = new JLabel("Currently Playing");

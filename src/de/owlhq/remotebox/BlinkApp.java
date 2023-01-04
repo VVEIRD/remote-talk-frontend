@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,13 +67,20 @@ public class BlinkApp {
 		init();
 	}
 
-	public static void init() {
+	private static void init() {
 		ALL_DEVICES = new HashMap<>();
 		NETWORK_DEVICES = new HashMap<>();
 		CUSTOM_DEVICES = new HashMap<>();
 		CONFIGURATION = new Properties();
 		boolean loaded = false;
-		try (FileInputStream fIn = new FileInputStream("data" + File.separator + "configuration.protperties")) {
+		try (FileInputStream fIn = new FileInputStream("data" + File.separator + "configuration.properties")) {
+			CONFIGURATION.load(fIn);
+			loaded = true;
+		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
+		}
+		// Load adapted config
+		try (FileInputStream fIn = new FileInputStream("data" + File.separator + "configuration.properties")) {
 			CONFIGURATION.load(fIn);
 			loaded = true;
 		} catch (FileNotFoundException e) {
@@ -130,6 +138,12 @@ public class BlinkApp {
 				BlinkAnimation bA = SELECTED_DEVICE.getAnimation(animation);
 				saveAnimation(animation, bA);
 			}
+			Map<String, BlinkAnimation> localAnimations = BlinkApp.getAnimations();
+			for (String animation : localAnimations.keySet()) {
+				if (!animations.contains(animation)) {
+					SELECTED_DEVICE.putAnimation(animation, localAnimations.get(animation));
+				}
+			}
 		}
 		findDevices();
 		deviceFinderDaemon = new Thread(new Runnable() {
@@ -175,6 +189,17 @@ public class BlinkApp {
 		      .filter(file -> !file.isDirectory())
 		      .map(file -> loadEffect(file.getAbsolutePath()))
 		      .collect(Collectors.toList());
+	}
+	
+	private static Map<String, BlinkAnimation> getAnimations() {
+			File[] files = new File(getConfig("de.owlhq.dataDir") + File.separator + "blinks").listFiles();
+			Map<String, BlinkAnimation> animations = new HashMap<>();
+			for (File file : files) {
+				BlinkAnimation ba = getAnimation(file.getName().replace(".json", ""));
+				System.out.println(file.getName().replace(".json", ""));
+				animations.put(file.getName().replace(".json", ""), ba);
+			}
+		    return animations;
 	}
 	
 	private static PlayEffect loadEffect(String path) {
@@ -258,12 +283,14 @@ public class BlinkApp {
 		Thread d = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				try (FileOutputStream fOut = new FileOutputStream("data" + File.separator + "configuration.protperties")) {
-					CONFIGURATION.store(fOut, "");
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
+				if (CONFIGURATION.contains("de.owlhq.dataDir"))  {
+					try (FileOutputStream fOut = new FileOutputStream("data" + File.separator + "configuration.auto.properties")) {
+						CONFIGURATION.store(fOut, "");
+					} catch (FileNotFoundException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+				}
 				}
 			}
 		});
@@ -338,11 +365,11 @@ public class BlinkApp {
 	
 	private static void updateSelectedDeviceStatus(boolean runOnce) {
 		if (SELECTED_DEVICE != null && lastKnownState == null) {
-			lastKnownState = SELECTED_DEVICE.getStatus();
+			lastKnownState = SELECTED_DEVICE.getStatus(true);
 		}
 		do {
 			if (SELECTED_DEVICE != null) {
-				RtBoxInfo currentKnownState  = SELECTED_DEVICE.getStatus();
+				RtBoxInfo currentKnownState  = SELECTED_DEVICE.getStatus(true);
 				// Connect & Disconnect Events are handled by findDevices()
 				// Animation Events
 				// Stop Animation Event
@@ -361,7 +388,9 @@ public class BlinkApp {
 					informDeviceListener(rtEvent);
 				}
 				// Start Audio Event
-				if (currentKnownState != null && (currentKnownState.hasAudioStarted(lastKnownState) || currentKnownState.hasAudioChanged(lastKnownState) && !currentKnownState.hasAudioStopped(lastKnownState))) {
+				if (currentKnownState != null && (currentKnownState.hasAudioStarted(lastKnownState) 
+						|| currentKnownState.hasAudioChanged(lastKnownState) && !currentKnownState.hasAudioStopped(lastKnownState) 
+						|| currentKnownState.hasRandomAudioChanged(lastKnownState))) {
 					RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.AUDIO_STARTED);
 					informDeviceListener(rtEvent);
 				}
@@ -371,7 +400,8 @@ public class BlinkApp {
 					informDeviceListener(rtEvent);
 				}
 				// Connect Voice Event
-				if (currentKnownState != null && (currentKnownState.hasVoiceConnected(lastKnownState) || currentKnownState.hasVoiceChanged(lastKnownState) && !currentKnownState.hasVoiceDisconnected(lastKnownState))) {
+				if (currentKnownState != null && (currentKnownState.hasVoiceConnected(lastKnownState) 
+						|| currentKnownState.hasVoiceChanged(lastKnownState) && !currentKnownState.hasVoiceDisconnected(lastKnownState))) {
 					RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.VOICE_CONNECTED);
 					informDeviceListener(rtEvent);
 				}
@@ -432,6 +462,8 @@ public class BlinkApp {
 	}
 	
 	public static RtBoxInfo getSelectedDeviceStatus() {
+		if (lastKnownState != null)
+			return lastKnownState;
 		RtBoxInfo rt = null;
 		if (SELECTED_DEVICE.isReachable()) {
 			rt = SELECTED_DEVICE.getStatus();
@@ -472,8 +504,10 @@ public class BlinkApp {
 	}
 
 	public static void setConfig(String key, String text) {
-		CONFIGURATION.setProperty(key, text);
+		if(key != null && !key.isBlank() && text != null && text.isBlank())
+			CONFIGURATION.setProperty(key, text);
 	}
+	
 	public static void saveConfig() {
 		storeConfiguration();
 	}
@@ -506,6 +540,10 @@ public class BlinkApp {
 		if (CURRENT_WINDOW !=null && CURRENT_WINDOW instanceof MainFrame) {
 			((MainFrame)CURRENT_WINDOW).setStatusText(text, c);
 		}
+	}
+
+	public static boolean debug() {
+		return "true".equalsIgnoreCase(getConfig("de.owlhq.debug"));
 	}
 
 }

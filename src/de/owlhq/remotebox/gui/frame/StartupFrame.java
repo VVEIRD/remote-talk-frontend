@@ -31,21 +31,6 @@ public class StartupFrame extends JFrame {
 	private JTextField tfVoiceUsername;
 	private JButton btnStart;
 
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					StartupFrame frame = new StartupFrame();
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
 
 	/**
 	 * Create the frame.

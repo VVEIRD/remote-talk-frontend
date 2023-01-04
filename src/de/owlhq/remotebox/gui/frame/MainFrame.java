@@ -29,6 +29,7 @@ import java.awt.event.ActionEvent;
 import java.awt.Color;
 import java.awt.Font;
 import de.owlhq.remotebox.gui.panel.DashboardPanel;
+import de.owlhq.remotebox.gui.panel.VoiceControlPanel;
 
 public class MainFrame extends JFrame {
 
@@ -39,22 +40,8 @@ public class MainFrame extends JFrame {
 	private LedControlPanel ledControlPanel;
 	private JLabel lblDeviceReachable;
 	private DashboardPanel dashboardPanel;
+	private VoiceControlPanel voiceControlPanel;
 
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					MainFrame frame = new MainFrame();
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
 
 	/**
 	 * Create the frame.
@@ -166,7 +153,7 @@ public class MainFrame extends JFrame {
 			public void deviceChange(RtDeviceEvent e) {
 				if (e.eventType == RtDeviceEvent.DEVICE_CONNECTED)
 					cbDevice.addItem(e.source.getDeviceName());
-				else {
+				else if (e.eventType == RtDeviceEvent.DEVICE_DISCONNECTED){
 					cbDevice.removeAllItems();
 					for(String name: BlinkApp.getDeviceNames()) {
 						cbDevice.addItem(name);
@@ -195,6 +182,9 @@ public class MainFrame extends JFrame {
 		
 		dashboardPanel = new DashboardPanel();
 		pnCommandCenter.add(dashboardPanel, BorderLayout.CENTER);
+		
+		voiceControlPanel = new VoiceControlPanel();
+		pnCommandCenter.add(voiceControlPanel, BorderLayout.WEST);
 		
 		AnimationDialog animationDialog = new AnimationDialog();
 		tabbedPane.addTab("Create Animation", null, animationDialog, null);

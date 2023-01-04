@@ -32,8 +32,9 @@ public class RtBoxDevice {
 	private String urlRoot     = null;
 	private String ip          = null;
 	private String serviceType = null;
-	
+
 	private transient RtBoxInfo lastStatus = null;
+	private transient long lastStatusTime = System.currentTimeMillis();
 	
 	public RtBoxDevice(Device ssdpDevice) {
 		this.deviceName = ssdpDevice.getUSN();
@@ -109,18 +110,23 @@ public class RtBoxDevice {
 			buff = Arrays.copyOf(buff, read);
 			data = new String(buff);
 		} catch (MalformedURLException e) {
-			e.printStackTrace();
+			if(BlinkApp.debug())
+				e.printStackTrace();
 		} catch (ProtocolException e) {
-			e.printStackTrace();
+			if(BlinkApp.debug())
+				e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+			if(BlinkApp.debug())
+				e.printStackTrace();
 		}
 		if (data != null) {
 			JsonParser parser = new JsonParser();
 			try {
 				json = (JsonObject) parser.parse(data);
 			} catch (JsonSyntaxException e) {
-				e.printStackTrace();
+				if(BlinkApp.debug())
+					e.printStackTrace();
+				System.out.println(data);
 			}
 		}
 		return json;
@@ -133,7 +139,8 @@ public class RtBoxDevice {
 				String status = json.get("status").getAsString();
 				return expectedStatus.equalsIgnoreCase(status);
 			} catch (ClassCastException e) {
-				e.printStackTrace();
+				if(BlinkApp.debug())
+					e.printStackTrace();
 			}
 		}
 		return false;
@@ -142,8 +149,12 @@ public class RtBoxDevice {
 	private boolean callSubroutine(String url, String expectedStatus) {
 		return callSubroutine(url, "GET", expectedStatus, null);
 	}
-	
+
 	public RtBoxInfo getStatus() {
+		return this.getStatus(false);
+	}
+	public RtBoxInfo getStatus(boolean force) {
+		if (force || System.currentTimeMillis() - this.lastStatusTime > 1000 || this.lastStatus == null) {
 		JsonObject json = this.callEndpoint(this.urlRoot, "GET", null);
 		RtBoxInfo rt = null;
 		if (json != null) {
@@ -151,14 +162,21 @@ public class RtBoxDevice {
 				rt = new Gson().fromJson(json, RtBoxInfo.class);
 			} catch (JsonSyntaxException e) {
 				BlinkApp.setStatusText("Could get status update from device", Color.RED.darker());
-				e.printStackTrace();
+				if(BlinkApp.debug())
+					e.printStackTrace();
 			}
 		}
 		else {
 			BlinkApp.setStatusText("Could get status update from device", Color.RED.darker());
 		}
 		this.lastStatus = rt;
+		this.lastStatusTime = System.currentTimeMillis();
 		return rt;
+		}
+		else {
+			return this.lastStatus;
+		}
+			
 	}
 
 	public List<String> getAnimationList() {
@@ -187,7 +205,8 @@ public class RtBoxDevice {
 					try {
 						return new Gson().fromJson(json, BlinkAnimation.class);
 					} catch (JsonSyntaxException e) {
-						e.printStackTrace();
+						if(BlinkApp.debug())
+							e.printStackTrace();
 					}
 				}
 			}
@@ -331,6 +350,34 @@ public class RtBoxDevice {
 		else
 			BlinkApp.setStatusText(effect.getName() + " not played", Color.RED.darker());
 		return successfullPlayed;
+	}
+
+	public boolean connectVoice(String ip, int port, String username, String password) {
+		String url = this.urlRoot + "/voice/connect?host=" + ip + "&port=" + port + "&username=" + username + "&password=" + password;
+		if (isReachable()) {
+			boolean success = this.callSubroutine(url, "connected");
+			if (success)
+				BlinkApp.setStatusText("Voice connected", Color.GREEN.darker());
+			else
+				BlinkApp.setStatusText("Could not connect voice", Color.RED.darker());
+			return success;
+				
+		}
+		return false;
+		
+	}
+
+	public boolean disconnectVoice() {
+		if (isReachable()) {
+			boolean success = this.callSubroutine(this.urlRoot + "/voice/disconnect", "disconnected");
+			if (success)
+				BlinkApp.setStatusText("Voice disconnected", Color.GREEN.darker());
+			else
+				BlinkApp.setStatusText("Could not disconnect from voice", Color.RED.darker());
+			return success;
+				
+		}
+		return false;
 	}
 	
 }
