@@ -63,7 +63,7 @@ public class BlinkApp {
 	private static Properties CONFIGURATION = null;
 	private static JFrame CURRENT_WINDOW = null;
 	
-	static {
+	static { 
 		init();
 	}
 
