@@ -50,7 +50,7 @@ public class EffectsPanel extends JPanel {
 		if (ba != null) {
 			Color c = ba.getPrimaryTargetColor();
 			if (c == null)
-				c = getBackground();
+				c = getBackground().darker();
 			setBackground(c);
 		}
 		setSize(new Dimension(120, 120));
