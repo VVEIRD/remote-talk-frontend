@@ -428,7 +428,7 @@ public class BlinkApp {
 				}
 				// Vocie
 				if (currentKnownState != null && currentKnownState.hasVoiceEndpointChanged(lastKnownState)) {
-					if (currentKnownState.isAudioEndpointOnline()) {
+					if (currentKnownState.isVoiceEndpointOnline()) {
 						RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.VOICE_PROCESS_STARTED);
 						informDeviceListener(rtEvent);
 					}
