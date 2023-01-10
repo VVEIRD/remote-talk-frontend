@@ -478,6 +478,7 @@ public class BlinkApp {
 			storeConfiguration();
 			// Download all Blink Animations if device is available
 			if (SELECTED_DEVICE.isReachable()) {
+				// Force update for the current animations
 				SELECTED_DEVICE.getStatus(true);
 				List<String> animations = SELECTED_DEVICE.getAnimationList();
 				for (String animation : animations) {

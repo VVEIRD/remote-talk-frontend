@@ -277,6 +277,13 @@ public class MainFrame extends JFrame {
 		case RtDeviceEvent.VOICE_PROCESS_STOPPED:
 			this.lblVoiceStatus.setIcon(VOICE_OFFLINE);
 			break;
+		case RtDeviceEvent.DEVICE_DISCONNECTED:
+			if (e.source != null && e.source.isSelectedDevice()) {
+				this.lblVoiceStatus.setIcon(VOICE_OFFLINE);
+				this.lblAudioStatus.setIcon(AUDIO_OFFLINE);
+				this.lblLedStatus.setIcon(LED_OFFLINE);
+			}
+			break;
 		}
 	}
 
