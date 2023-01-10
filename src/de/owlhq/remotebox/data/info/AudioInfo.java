@@ -3,11 +3,14 @@ package de.owlhq.remotebox.data.info;
 import java.util.List;
 
 public class AudioInfo {
+	
 	List<String> audio_files = null;
+	
 	RandomPlaybackInfo random_playback = null;
+	
 	AudioStatus status = null;
 	
-	
+	String last_update = "";
 	
 	public List<String> getAudio_files() {
 		return audio_files;
@@ -31,6 +34,14 @@ public class AudioInfo {
 
 	public void setStatus(AudioStatus status) {
 		this.status = status;
+	}
+	
+	public String getLast_update() {
+		return last_update;
+	}
+	
+	public void setLast_update(String last_update) {
+		this.last_update = last_update;
 	}
 
 	public class AudioStatus {

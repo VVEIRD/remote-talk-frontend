@@ -9,6 +9,8 @@ public class LedInfo {
 	
 	BlinkDevice[] devices = null;
 	
+	String last_update = "";
+	
 	
 	public List<String> getBlinks() {
 		return blinks;
@@ -35,6 +37,13 @@ public class LedInfo {
 		if (devices != null && devices.length > 0)
 			pInfo = devices[0].getCurrently_playing();
 		return pInfo;
+	}
+	
+	public String getLast_update() {
+		return last_update;
+	}
+	public void setLast_update(String last_update) {
+		this.last_update = last_update;
 	}
 
 	public class BlinkDevice {
@@ -66,7 +75,6 @@ public class LedInfo {
 		public void setName(String name) {
 			this.name = name;
 		}
-		
 	}
 	
 	public class PlayingInfo {

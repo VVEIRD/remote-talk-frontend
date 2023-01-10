@@ -201,7 +201,7 @@ public class VoiceControlPanel extends JPanel {
 		});
 		if (BlinkApp.getSelectedDevice() != null) {
 			RtBoxInfo inf = BlinkApp.getSelectedDeviceStatus() != null ? BlinkApp.getSelectedDeviceStatus() : BlinkApp.getSelectedDevice().getStatus();
-			if (inf != null && inf.getVoice().getStatus().equals("connected")) {
+			if (inf.isReachable() && inf.isVoiceEndpointOnline() && inf.isVoiceConnected()) {
 				VoiceControlPanel.this.enabled = true;
 				VoiceControlPanel.this.btnConnect.setText("Disconnect");
 				VoiceControlPanel.this.lblVoiceStatus.setText("CONNECTED");

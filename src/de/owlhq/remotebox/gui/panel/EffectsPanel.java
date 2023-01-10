@@ -53,6 +53,8 @@ public class EffectsPanel extends JPanel {
 				c = getBackground().darker();
 			setBackground(c);
 		}
+		else
+			setBackground(getBackground().darker());
 		setSize(new Dimension(120, 120));
 		setMaximumSize(new Dimension(120, 120));
 		setMinimumSize(new Dimension(120, 120));

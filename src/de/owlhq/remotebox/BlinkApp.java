@@ -84,7 +84,7 @@ public class BlinkApp {
 		} catch (IOException e) {
 		}
 		// Load adapted config
-		try (FileInputStream fIn = new FileInputStream("data" + File.separator + "configuration.properties")) {
+		try (FileInputStream fIn = new FileInputStream("data" + File.separator + "configuration.auto.properties")) {
 			CONFIGURATION.load(fIn);
 			loaded = true;
 		} catch (FileNotFoundException e) {
@@ -284,21 +284,15 @@ public class BlinkApp {
 	}
 
 	private static void storeConfiguration() {
-		Thread d = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				if (CONFIGURATION.contains("de.owlhq.dataDir"))  {
-					try (FileOutputStream fOut = new FileOutputStream("data" + File.separator + "configuration.auto.properties")) {
-						CONFIGURATION.store(fOut, "");
-					} catch (FileNotFoundException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
-						e.printStackTrace();
-				}
-				}
-			}
-		});
-		d.start();
+		if (CONFIGURATION.containsKey("de.owlhq.dataDir"))  {
+			try (FileOutputStream fOut = new FileOutputStream(CONFIGURATION.get("de.owlhq.dataDir") + File.separator + "configuration.auto.properties")) {
+				CONFIGURATION.store(fOut, "");
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+		}
+		}	
 	}
 	
 	private static void findDevices() {
@@ -502,14 +496,17 @@ public class BlinkApp {
 	public static boolean configContainsKey(String key) {
 		return CONFIGURATION.containsKey(key);
 	}
-	
-	public static <T> boolean configContainsKey(String key, Class<T> type) {
-		return CONFIGURATION.containsKey(key) && CONFIGURATION.get(key).getClass() == type;
-	}
+
 
 	public static void setConfig(String key, String text) {
-		if(key != null && !key.isBlank() && text != null && text.isBlank())
+		if (BlinkApp.debug()) {
+			System.out.println("KEY: " + key + "; VALUE: " + text);
+		}
+		if(key != null && !key.isBlank() && text != null && !text.isBlank()) {
+			if (BlinkApp.debug())
+				System.out.println("SETTING PROPERTY");
 			CONFIGURATION.setProperty(key, text);
+		}
 	}
 	
 	public static void saveConfig() {

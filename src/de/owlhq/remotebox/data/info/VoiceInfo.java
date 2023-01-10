@@ -8,6 +8,7 @@ public class VoiceInfo {
 	int port = -1;
 	int session = -1;
 	String status = "";
+	String last_update = "";
 	
 	public int getChannel_id() {
 		return channel_id;
@@ -44,6 +45,12 @@ public class VoiceInfo {
 	}
 	public void setStatus(String status) {
 		this.status = status;
+	}
+	public String getLast_update() {
+		return last_update;
+	}
+	public void setLast_update(String last_update) {
+		this.last_update = last_update;
 	}
 
 }

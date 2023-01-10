@@ -5,14 +5,17 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -89,6 +92,7 @@ public class RtBoxDevice {
 		try {
 			URL url = new URL(urlString);
 			HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			con.setRequestProperty("Cookie", "accessToken=" + BlinkApp.getConfig("de.owlhq.accessToken")); 
 			if("PUT".equals(method.toUpperCase())) {
 				con.setDoOutput(true);
 				con.setRequestMethod(method);
@@ -169,9 +173,22 @@ public class RtBoxDevice {
 		else {
 			BlinkApp.setStatusText("Could get status update from device", Color.RED.darker());
 		}
-		this.lastStatus = rt;
-		this.lastStatusTime = System.currentTimeMillis();
-		return rt;
+		if (rt != null) {
+			this.lastStatus = rt;
+			this.lastStatusTime = System.currentTimeMillis();
+		}
+		else {
+			if (this.lastStatus == null) {
+				this.lastStatus = new RtBoxInfo();
+				Map<String, String> processes = new HashMap<>();
+				processes.put("led", "offline");
+				processes.put("audio", "offline");
+				processes.put("voice", "offline");
+				this.lastStatus.setProcesses(processes);
+			}
+			this.lastStatus.setReachable(false);
+		}
+		return this.lastStatus;
 		}
 		else {
 			return this.lastStatus;
@@ -181,7 +198,7 @@ public class RtBoxDevice {
 
 	public List<String> getAnimationList() {
 		RtBoxInfo rt = getStatus();
-		if (rt != null)
+		if (rt.isReachable() && rt.isLedEndpointOnline())
 			return rt.getLed().getBlinks();
 		BlinkApp.setStatusText("Could not get animations", Color.RED.darker());
 		return new LinkedList<>();
@@ -189,7 +206,7 @@ public class RtBoxDevice {
 
 	public List<String> getAudioFiles() {
 		RtBoxInfo rt = getStatus();
-		if (rt != null)
+		if (rt.isAudioEndpointOnline())
 			return rt.getAudio().getAudio_files();
 		BlinkApp.setStatusText("Could not get sound clip names", Color.RED.darker());
 		return new LinkedList<>();
@@ -197,10 +214,10 @@ public class RtBoxDevice {
 	
 	public BlinkAnimation getAnimation(String animationName) {
 		RtBoxInfo rt = getStatus();
-		if (isReachable()) {
+		if (rt.isReachable() && rt.isLedEndpointOnline()) {
 			List<String> blinks = rt.getLed().getBlinks();
 			if (blinks.contains(animationName)) {
-				JsonObject json = this.callEndpoint(this.urlRoot + "/blink/" + animationName, "GET", null);
+				JsonObject json = this.callEndpoint(rt.getLedEndpoint() + "/blink/" + animationName, "GET", null);
 				if (json != null) {
 					try {
 						return new Gson().fromJson(json, BlinkAnimation.class);
@@ -216,20 +233,24 @@ public class RtBoxDevice {
 	}
 	
 	public boolean putAnimation(String animationName, BlinkAnimation animation) {
-		boolean success = callSubroutine(this.urlRoot + "/blink/" + animationName, "PUT", "blink saved", new Gson().toJson(animation));
-		if (success)
-			BlinkApp.setStatusText("Uploaded animation " + animationName, Color.GREEN.darker());
-		else
-			BlinkApp.setStatusText("Could not upload animation" + animationName, Color.RED.darker());
+		boolean success = false;
+		RtBoxInfo rt = getStatus();
+		if (rt.isReachable() && rt.isLedEndpointOnline()) {
+			success = callSubroutine(rt.getLedEndpoint() + "/blink/" + animationName, "PUT", "blink saved", new Gson().toJson(animation));
+			if (success)
+				BlinkApp.setStatusText("Uploaded animation " + animationName, Color.GREEN.darker());
+			else
+				BlinkApp.setStatusText("Could not upload animation" + animationName, Color.RED.darker());
+		}
 		return success;
 	}
 	
 	public boolean playAnimation(String animationName, boolean endless) {
-		if (isReachable()) {
-			RtBoxInfo rt = getStatus();
+		RtBoxInfo rt = getStatus();
+		if (rt.isReachable() && rt.isLedEndpointOnline()) {
 			List<String> blinks = rt.getLed().getBlinkAsList();
 			if (blinks.contains(animationName)) {
-				boolean success = this.callSubroutine(this.urlRoot + "/led/play/" + animationName + "?endless=" + endless, "blink queued");
+				boolean success = this.callSubroutine(rt.getLedEndpoint() + "/led/play/" + animationName + "?endless=" + endless, "blink queued");
 				if (success)
 					BlinkApp.setStatusText("Playing animation " + animationName + (endless ? " endlessly" : ""), Color.GREEN.darker());
 				else
@@ -241,8 +262,9 @@ public class RtBoxDevice {
 	}
 	
 	public boolean stopAnimationPlayback() {
-		if (isReachable()) {
-			boolean success = this.callSubroutine(this.urlRoot + "/led/stop", "stopping animation queued");
+		RtBoxInfo rt = getStatus();
+		if (rt.isReachable() && rt.isLedEndpointOnline()) {
+			boolean success = this.callSubroutine(rt.getLedEndpoint() + "/led/stop", "stopping animation queued");
 			if (success)
 				BlinkApp.setStatusText("Animation stopped", Color.GREEN.darker());
 			else
@@ -253,11 +275,11 @@ public class RtBoxDevice {
 	}
 	
 	public boolean playAudio(String audioName) {
-		if (isReachable()) {
-			RtBoxInfo rt = getStatus();
+		RtBoxInfo rt = getStatus();
+		if (rt.isReachable() && rt.isAudioEndpointOnline()) {
 			List<String> audioFiles = rt.getAudio().getAudio_files();
 			if (audioFiles.contains(audioName)) {
-				boolean success = this.callSubroutine(this.urlRoot + "/audio/play/" + audioName, "Audio queued");
+				boolean success = this.callSubroutine(rt.getAudioEndpoint() + "/audio/play/" + audioName, "Audio queued");
 				if (success)
 					BlinkApp.setStatusText("sound " + audioName + " queued", Color.GREEN.darker());
 				else
@@ -269,8 +291,9 @@ public class RtBoxDevice {
 	}
 	
 	public boolean stopAudioPlayback() {
-		if (isReachable()) {
-			boolean success = this.callSubroutine(this.urlRoot + "/audio/stop", "Playback stopped");
+		RtBoxInfo rt = getStatus();
+		if (rt.isReachable() && rt.isAudioEndpointOnline()) {
+			boolean success = this.callSubroutine(rt.getAudioEndpoint() + "/audio/stop", "Playback stopped");
 			if (success)
 				BlinkApp.setStatusText("Audio playback stopped", Color.GREEN.darker());
 			else
@@ -281,8 +304,9 @@ public class RtBoxDevice {
 	}
 	
 	public boolean flushAudioQueue() {
-		if (isReachable()) {
-			boolean success = this.callSubroutine(this.urlRoot + "/audio/flush", "Queue flushed");
+		RtBoxInfo rt = getStatus();
+		if (rt.isReachable() && rt.isAudioEndpointOnline()) {
+			boolean success = this.callSubroutine(rt.getAudioEndpoint() + "/audio/flush", "Queue flushed");
 			if (success)
 				BlinkApp.setStatusText("Queue flushed", Color.GREEN.darker());
 			else
@@ -293,8 +317,9 @@ public class RtBoxDevice {
 	}
 	
 	public boolean disableRandomAudio() {
-		if (isReachable()) {
-			boolean success = this.callSubroutine(this.urlRoot + "/audio/random/disable", "Random playback disabled");
+		RtBoxInfo rt = getStatus();
+		if (rt.isReachable() && rt.isAudioEndpointOnline()) {
+			boolean success = this.callSubroutine(rt.getAudioEndpoint() + "/audio/random/disable", "Random playback disabled");
 			if (success)
 				BlinkApp.setStatusText("Random audio disabled", Color.GREEN.darker());
 			else
@@ -305,8 +330,9 @@ public class RtBoxDevice {
 	}
 	
 	public boolean enableRandomAudio() {
-		if (isReachable()) {
-			boolean success = this.callSubroutine(this.urlRoot + "/audio/random/enable", "Random playback enabled");
+		RtBoxInfo rt = getStatus();
+		if (rt.isReachable() && rt.isAudioEndpointOnline()) {
+			boolean success = this.callSubroutine(rt.getAudioEndpoint() + "/audio/random/enable", "Random playback enabled");
 			if (success)
 				BlinkApp.setStatusText("Random audio enabled", Color.GREEN.darker());
 			else
@@ -317,8 +343,9 @@ public class RtBoxDevice {
 	}
 	
 	public boolean stopRandomAudio() {
-		if (isReachable()) {
-			boolean success = this.callSubroutine(this.urlRoot + "/audio/random/stop", "Random playback enabled");
+		RtBoxInfo rt = getStatus();
+		if (rt.isReachable() && rt.isAudioEndpointOnline()) {
+			boolean success = this.callSubroutine(rt.getAudioEndpoint() + "/audio/random/stop", "Random playback enabled");
 			if (success)
 				BlinkApp.setStatusText("Random audio stopped", Color.GREEN.darker());
 			else
@@ -331,7 +358,7 @@ public class RtBoxDevice {
 
 	public boolean isReachable() {
 		RtBoxInfo rt = getStatus();
-		return rt != null;
+		return rt.isReachable();
 	}
 
 	public boolean playEffect(PlayEffect effect) {
@@ -348,13 +375,14 @@ public class RtBoxDevice {
 		if (successfullPlayed) 
 			BlinkApp.setStatusText(effect.getName() + " played", Color.GREEN.darker());
 		else
-			BlinkApp.setStatusText(effect.getName() + " not played", Color.RED.darker());
+			BlinkApp.setStatusText(effect.getName() + " was not played", Color.RED.darker());
 		return successfullPlayed;
 	}
 
 	public boolean connectVoice(String ip, int port, String username, String password) {
-		String url = this.urlRoot + "/voice/connect?host=" + ip + "&port=" + port + "&username=" + username + "&password=" + password;
-		if (isReachable()) {
+		RtBoxInfo rt = getStatus();
+		if (rt.isReachable() && rt.isVoiceEndpointOnline()) {
+			String url = rt.getVoiceEndpoint() + "/voice/connect?host=" + ip + "&port=" + port + "&username=" + username + "&password=" + password;
 			boolean success = this.callSubroutine(url, "connected");
 			if (success)
 				BlinkApp.setStatusText("Voice connected", Color.GREEN.darker());
@@ -368,8 +396,9 @@ public class RtBoxDevice {
 	}
 
 	public boolean disconnectVoice() {
-		if (isReachable()) {
-			boolean success = this.callSubroutine(this.urlRoot + "/voice/disconnect", "disconnected");
+		RtBoxInfo rt = getStatus();
+		if (rt.isReachable() && rt.isVoiceEndpointOnline()) {
+			boolean success = this.callSubroutine(rt.getVoiceEndpoint() + "/voice/disconnect", "disconnected");
 			if (success)
 				BlinkApp.setStatusText("Voice disconnected", Color.GREEN.darker());
 			else

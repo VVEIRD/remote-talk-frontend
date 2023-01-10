@@ -1,11 +1,20 @@
 package de.owlhq.remotebox.data.info;
 
+import java.util.Map;
+
 public class RtBoxInfo {
+	
+	boolean reachable = true;
+	
 	AudioInfo audio = null;
 	
 	LedInfo led = null;
 	
 	VoiceInfo voice = null;
+	
+	Map<String, String> endpoints = null;
+	
+	Map<String, String> processes = null;
 
 	public AudioInfo getAudio() {
 		return audio;
@@ -29,6 +38,30 @@ public class RtBoxInfo {
 
 	public void setVoice(VoiceInfo voice) {
 		this.voice = voice;
+	}
+	
+	public void setEndpoints(Map<String, String> endpoints) {
+		this.endpoints = endpoints;
+	}
+	
+	public void setProcesses(Map<String, String> processes) {
+		this.processes = processes;
+	}
+	
+	public Map<String, String> getEndpoints() {
+		return endpoints;
+	}
+	
+	public Map<String, String> getProcesses() {
+		return processes;
+	}
+	
+	public boolean isReachable() {
+		return reachable;
+	}
+	
+	public void setReachable(boolean reachable) {
+		this.reachable = reachable;
 	}
 	
 	// ----------------------------------------------------------------------------------------------------------
@@ -220,6 +253,30 @@ public class RtBoxInfo {
 			currentAnimationState = this.getLed().getCurrentlyPlaying().getBlink() != null;
 		}
 		return oldAnimationState && !currentAnimationState;
+	}
+
+	public boolean isAudioEndpointOnline() {
+		return "online".equals(this.processes.get("audio"));
+	}
+
+	public boolean isLedEndpointOnline() {
+		return "online".equals(this.processes.get("led"));
+	}
+
+	public boolean isVoiceEndpointOnline() {
+		return "online".equals(this.processes.get("voice"));
+	}
+	
+	public String getAudioEndpoint() {
+		return this.endpoints.get("audio");
+	}
+	
+	public String getLedEndpoint() {
+		return this.endpoints.get("led");
+	}
+	
+	public String getVoiceEndpoint() {
+		return this.endpoints.get("voice");
 	}
 
 }
