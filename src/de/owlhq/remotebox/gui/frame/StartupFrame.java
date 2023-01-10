@@ -116,7 +116,6 @@ public class StartupFrame extends JFrame {
 				BlinkApp.setConfig("de.owlhq.voice.username", tfVoiceUsername.getText());
 				BlinkApp.setConfig("de.owlhq.voice.password", tfPassword.getText());
 				BlinkApp.setConfig("de.owlhq.accessToken", tfAccessToken.getText());
-				BlinkApp.getDevice((String)cbRemoteBox.getSelectedItem()).getStatus(true);
 				BlinkApp.selectDevice((String)cbRemoteBox.getSelectedItem());
 				BlinkApp.saveConfig();
 				StartupFrame.this.setVisible(false);

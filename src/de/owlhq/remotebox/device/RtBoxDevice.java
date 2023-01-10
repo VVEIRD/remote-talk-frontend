@@ -115,13 +115,13 @@ public class RtBoxDevice {
 			data = new String(buff);
 		} catch (MalformedURLException e) {
 			if(BlinkApp.debug())
-				e.printStackTrace();
+				System.out.println("Endpoint " + urlString + " not valid");
 		} catch (ProtocolException e) {
 			if(BlinkApp.debug())
-				e.printStackTrace();
+				System.out.println("Endpoint " + urlString + " unreachabe");
 		} catch (IOException e) {
 			if(BlinkApp.debug())
-				e.printStackTrace();
+				System.out.println("Endpoint " + urlString + " unreachabe");
 		}
 		if (data != null) {
 			JsonParser parser = new JsonParser();
@@ -138,7 +138,7 @@ public class RtBoxDevice {
 
 	private boolean callSubroutine(String url, String method, String expectedStatus, String content) {
 		JsonObject json = this.callEndpoint(url, method, content);
-		if (json.get("status") != null && json.get("status").isJsonPrimitive()) {
+		if (json != null && json.get("status") != null && json.get("status").isJsonPrimitive()) {
 			try {
 				String status = json.get("status").getAsString();
 				return expectedStatus.equalsIgnoreCase(status);

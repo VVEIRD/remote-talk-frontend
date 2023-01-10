@@ -1,5 +1,6 @@
 package de.owlhq.remotebox.data.info;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class RtBoxInfo {
@@ -15,6 +16,11 @@ public class RtBoxInfo {
 	Map<String, String> endpoints = null;
 	
 	Map<String, String> processes = null;
+	
+	public RtBoxInfo() {
+		this.endpoints = new HashMap<>();
+		this.processes = new HashMap<>();
+	}
 
 	public AudioInfo getAudio() {
 		return audio;
@@ -137,15 +143,15 @@ public class RtBoxInfo {
 	}
 	
 	public boolean isPlayingAudio() {
-		return this.getAudio().getStatus() != null && this.getAudio().getStatus().getCurrently_playing() != null;
+		return this.isAudioEndpointOnline() && this.getAudio().getStatus() != null && this.getAudio().getStatus().getCurrently_playing() != null;
 	}
 	
 	public boolean isPlayingAnimation() {
-		return this.getLed() != null && this.getLed().getCurrentlyPlaying() != null && this.getLed().getCurrentlyPlaying().getBlink() != null;
+		return this.isLedEndpointOnline() &&this.getLed() != null && this.getLed().getCurrentlyPlaying() != null && this.getLed().getCurrentlyPlaying().getBlink() != null;
 	}
 
 	public boolean isVoiceConnected() {
-		return this.getVoice() != null && "connected".equalsIgnoreCase(this.getVoice().getStatus());
+		return this.isVoiceEndpointOnline() &&this.getVoice() != null && "connected".equalsIgnoreCase(this.getVoice().getStatus());
 	}
 	
 	// ----------------------------------------------------------------------------------------------------------
@@ -254,6 +260,11 @@ public class RtBoxInfo {
 		}
 		return oldAnimationState && !currentAnimationState;
 	}
+	
+	// ----------------------------------------------------------------------------------------------------------
+	// -- Endpoint helper methods
+	// ----------------------------------------------------------------------------------------------------------
+	
 
 	public boolean isAudioEndpointOnline() {
 		return "online".equals(this.processes.get("audio"));
@@ -277,6 +288,18 @@ public class RtBoxInfo {
 	
 	public String getVoiceEndpoint() {
 		return this.endpoints.get("voice");
+	}
+	
+	public boolean hasLedEndpointChanged(RtBoxInfo oldInfo) {
+		return oldInfo == null || this.isLedEndpointOnline() != oldInfo.isLedEndpointOnline();
+	}
+	
+	public boolean hasAudioEndpointChanged(RtBoxInfo oldInfo) {
+		return oldInfo == null || this.isAudioEndpointOnline() != oldInfo.isAudioEndpointOnline();
+	}
+	
+	public boolean hasVoiceEndpointChanged(RtBoxInfo oldInfo) {
+		return oldInfo == null || this.isVoiceEndpointOnline() != oldInfo.isVoiceEndpointOnline();
 	}
 
 }

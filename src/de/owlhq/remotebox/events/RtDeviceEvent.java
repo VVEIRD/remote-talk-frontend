@@ -13,6 +13,18 @@ public class RtDeviceEvent {
 	public final static int AUDIO_STOPPED = 5;
 	public final static int VOICE_CONNECTED = 6;
 	public final static int VOICE_DISCONNECTED = 7;
+	
+	
+	// Process events
+
+	public final static int LED_PROCESS_STARTED = 8;
+	public final static int LED_PROCESS_STOPPED = 9;
+	
+	public final static int AUDIO_PROCESS_STARTED = 10;
+	public final static int AUDIO_PROCESS_STOPPED = 11;
+	
+	public final static int VOICE_PROCESS_STARTED = 12;
+	public final static int VOICE_PROCESS_STOPPED = 13;
 
 	public final RtBoxDevice source;
 

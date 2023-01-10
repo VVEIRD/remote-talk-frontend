@@ -13,6 +13,7 @@ import javax.swing.JTabbedPane;
 
 import de.owlhq.remotebox.BlinkApp;
 import de.owlhq.remotebox.animation.BlinkAnimation;
+import de.owlhq.remotebox.data.info.RtBoxInfo;
 import de.owlhq.remotebox.device.RtBoxDevice;
 import de.owlhq.remotebox.events.RtDeviceEvent;
 import de.owlhq.remotebox.events.RtDeviceListener;
@@ -24,12 +25,14 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.util.LinkedList;
 import java.awt.event.ActionEvent;
 import java.awt.Color;
 import java.awt.Font;
 import de.owlhq.remotebox.gui.panel.DashboardPanel;
 import de.owlhq.remotebox.gui.panel.VoiceControlPanel;
+import javax.swing.ImageIcon;
 
 public class MainFrame extends JFrame {
 
@@ -41,12 +44,27 @@ public class MainFrame extends JFrame {
 	private JLabel lblDeviceReachable;
 	private DashboardPanel dashboardPanel;
 	private VoiceControlPanel voiceControlPanel;
+	private JLabel lblLedStatus;
+	private JLabel lblAudioStatus;
+	private JLabel lblVoiceStatus;
+	private final ImageIcon LED_OFFLINE;
+	private final ImageIcon LED_ONLINE;
+	private final ImageIcon AUDIO_OFFLINE;
+	private final ImageIcon AUDIO_ONLINE;
+	private final ImageIcon VOICE_OFFLINE;
+	private final ImageIcon VOICE_ONLINE;
 
 
 	/**
 	 * Create the frame.
 	 */
 	public MainFrame() {
+		LED_OFFLINE   = new ImageIcon(BlinkApp.getConfig("de.owlhq.dataDir") + File.separator + "img" + File.separator + "led_offline.png");
+		LED_ONLINE    = new ImageIcon(BlinkApp.getConfig("de.owlhq.dataDir") + File.separator + "img" + File.separator + "led_online.png");
+		AUDIO_OFFLINE = new ImageIcon(BlinkApp.getConfig("de.owlhq.dataDir") + File.separator + "img" + File.separator + "audio_offline.png");
+		AUDIO_ONLINE  = new ImageIcon(BlinkApp.getConfig("de.owlhq.dataDir") + File.separator + "img" + File.separator + "audio_online.png");
+		VOICE_OFFLINE = new ImageIcon(BlinkApp.getConfig("de.owlhq.dataDir") + File.separator + "img" + File.separator + "voice_offline.png");
+		VOICE_ONLINE  = new ImageIcon(BlinkApp.getConfig("de.owlhq.dataDir") + File.separator + "img" + File.separator + "voice_online.png");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 850, 820);
 		contentPane = new JPanel();
@@ -133,6 +151,18 @@ public class MainFrame extends JFrame {
 		lblDeviceReachable.setForeground(Color.RED);
 		contentPane.add(lblDeviceReachable, "2, 2, 3, 1");
 		
+		lblLedStatus = new JLabel("New label");
+		lblLedStatus.setIcon(LED_OFFLINE);
+		contentPane.add(lblLedStatus, "6, 2");
+		
+		lblAudioStatus = new JLabel("New label");
+		lblAudioStatus.setIcon(AUDIO_OFFLINE);
+		contentPane.add(lblAudioStatus, "8, 2");
+		
+		lblVoiceStatus = new JLabel("New label");
+		lblVoiceStatus.setIcon(VOICE_OFFLINE);
+		contentPane.add(lblVoiceStatus, "10, 2");
+		
 		JLabel lblNewLabel = new JLabel("Selected Device");
 		contentPane.add(lblNewLabel, "14, 2, 7, 1");
 		
@@ -200,23 +230,54 @@ public class MainFrame extends JFrame {
 		});
 		// Populate Data with current state
 		if (BlinkApp.getSelectedDevice() != null) {
-			BlinkApp.getSelectedDevice().getStatus();
+			RtBoxInfo status = BlinkApp.getSelectedDevice().getStatus();
 			updateDeviceReachable(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.DEVICE_CONNECTED));
-			if (BlinkApp.getSelectedDevice().getLastStatus() != null && BlinkApp.getSelectedDevice().getLastStatus().isPlayingAnimation())
+			if (status != null && status.isLedEndpointOnline() && status.isPlayingAnimation())
 				updateAnimation(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.ANIMATION_STARTED));
 			else
 				updateAnimation(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.ANIMATION_STOPPED));
-			if (BlinkApp.getSelectedDevice().getLastStatus() != null && BlinkApp.getSelectedDevice().getLastStatus().isPlayingAudio())
+			if (status != null && status.isAudioEndpointOnline() && status.isPlayingAudio())
 				updateAudio(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.AUDIO_STARTED));
 			else
 				updateAudio(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.AUDIO_STOPPED));
+			// Update process indicators
+			if (status != null && status.isLedEndpointOnline())
+				updateProcess(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.LED_PROCESS_STARTED));
+			if (status != null && status.isAudioEndpointOnline())
+				updateProcess(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.AUDIO_PROCESS_STARTED));
+			if (status != null && status.isVoiceEndpointOnline())
+				updateProcess(new RtDeviceEvent(BlinkApp.getSelectedDevice(), RtDeviceEvent.VOICE_PROCESS_STARTED));
 		}
 	}
 	
 	private void updateInfoDaemon(RtDeviceEvent e) {
+		updateProcess(e);
 		updateAudio(e);
 		updateAnimation(e);
 		updateDeviceReachable(e);
+	}
+
+	private void updateProcess(RtDeviceEvent e) {
+		switch(e.eventType) {
+		case RtDeviceEvent.LED_PROCESS_STARTED:
+			this.lblLedStatus.setIcon(LED_ONLINE);
+			break;
+		case RtDeviceEvent.LED_PROCESS_STOPPED:
+			this.lblLedStatus.setIcon(LED_OFFLINE);
+			break;
+		case RtDeviceEvent.AUDIO_PROCESS_STARTED:
+			this.lblAudioStatus.setIcon(AUDIO_ONLINE);
+			break;
+		case RtDeviceEvent.AUDIO_PROCESS_STOPPED:
+			this.lblAudioStatus.setIcon(AUDIO_OFFLINE);
+			break;
+		case RtDeviceEvent.VOICE_PROCESS_STARTED:
+			this.lblVoiceStatus.setIcon(VOICE_ONLINE);
+			break;
+		case RtDeviceEvent.VOICE_PROCESS_STOPPED:
+			this.lblVoiceStatus.setIcon(VOICE_OFFLINE);
+			break;
+		}
 	}
 
 	private void updateDeviceReachable(RtDeviceEvent e) {

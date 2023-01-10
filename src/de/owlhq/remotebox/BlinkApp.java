@@ -84,7 +84,7 @@ public class BlinkApp {
 		} catch (IOException e) {
 		}
 		// Load adapted config
-		try (FileInputStream fIn = new FileInputStream("data" + File.separator + "configuration.auto.properties")) {
+		try (FileInputStream fIn = new FileInputStream(CONFIGURATION.get("de.owlhq.dataDir") + File.separator + "configuration.auto.properties")) {
 			CONFIGURATION.load(fIn);
 			loaded = true;
 		} catch (FileNotFoundException e) {
@@ -403,6 +403,40 @@ public class BlinkApp {
 					RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.VOICE_CONNECTED);
 					informDeviceListener(rtEvent);
 				}
+				// Endpoint changes
+				// LED
+				if (currentKnownState != null && currentKnownState.hasLedEndpointChanged(lastKnownState)) {
+					if (currentKnownState.isLedEndpointOnline()) {
+						RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.LED_PROCESS_STARTED);
+						informDeviceListener(rtEvent);
+					}
+					else {
+						RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.LED_PROCESS_STOPPED);
+						informDeviceListener(rtEvent);
+					}
+				}
+				// Audio
+				if (currentKnownState != null && currentKnownState.hasAudioEndpointChanged(lastKnownState)) {
+					if (currentKnownState.isAudioEndpointOnline()) {
+						RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.AUDIO_PROCESS_STARTED);
+						informDeviceListener(rtEvent);
+					}
+					else {
+						RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.AUDIO_PROCESS_STOPPED);
+						informDeviceListener(rtEvent);
+					}
+				}
+				// Vocie
+				if (currentKnownState != null && currentKnownState.hasVoiceEndpointChanged(lastKnownState)) {
+					if (currentKnownState.isAudioEndpointOnline()) {
+						RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.VOICE_PROCESS_STARTED);
+						informDeviceListener(rtEvent);
+					}
+					else {
+						RtDeviceEvent rtEvent = new RtDeviceEvent(SELECTED_DEVICE, RtDeviceEvent.VOICE_PROCESS_STOPPED);
+						informDeviceListener(rtEvent);
+					}
+				}
 				lastKnownState = currentKnownState;
 			}
 			else  {
@@ -444,6 +478,7 @@ public class BlinkApp {
 			storeConfiguration();
 			// Download all Blink Animations if device is available
 			if (SELECTED_DEVICE.isReachable()) {
+				SELECTED_DEVICE.getStatus(true);
 				List<String> animations = SELECTED_DEVICE.getAnimationList();
 				for (String animation : animations) {
 					BlinkAnimation bA = SELECTED_DEVICE.getAnimation(animation);
